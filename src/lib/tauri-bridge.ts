@@ -460,6 +460,9 @@ export const bridge = {
   setGitRemoteUrl: (cwd: string, url: string, remoteName = 'origin') =>
     invoke<string>('set_git_remote_url', { cwd, url, remoteName }),
 
+  initGitRepository: (cwd: string, remoteUrl?: string | null, remoteName = 'origin') =>
+    invoke<string>('init_git_repository', { cwd, remoteUrl: remoteUrl || null, remoteName }),
+
   // Rewind files via SDK control protocol (fast, in-process) with CLI spawn fallback
   rewindFiles: (stdinId: string, userMessageId: string, sessionId: string, cwd: string) =>
     invoke<void>('send_control_request', {

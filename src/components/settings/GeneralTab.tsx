@@ -435,7 +435,7 @@ export function GeneralTab() {
                 </div>
                 <button
                   onClick={() => setBackgroundEnhanceEnabled(!backgroundEnhanceEnabled)}
-                  className="inline-flex items-center gap-2 text-[12px] text-text-secondary hover:text-text-primary transition-smooth flex-shrink-0"
+                  className="mt-0.5 inline-flex h-6 flex-shrink-0 items-center gap-2 self-start rounded-full text-[12px] leading-none text-text-secondary transition-smooth hover:text-text-primary"
                 >
                   <span className={`relative w-8 h-4 rounded-full transition-smooth ${
                     backgroundEnhanceEnabled ? 'bg-accent/80' : 'bg-bg-tertiary border border-border-subtle'
@@ -446,7 +446,7 @@ export function GeneralTab() {
                     }`}
                     />
                   </span>
-                  {backgroundEnhanceEnabled ? '已开启' : '已关闭'}
+                  <span className="leading-none">{backgroundEnhanceEnabled ? '已开启' : '已关闭'}</span>
                 </button>
               </div>
             </div>

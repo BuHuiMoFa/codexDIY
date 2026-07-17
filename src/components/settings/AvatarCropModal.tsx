@@ -167,9 +167,9 @@ export function AvatarCropModal({ imageFile, onSave, onCancel }: AvatarCropModal
   const canInteract = !isLoading && !loadError && !!imgEl;
 
   return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50"
+    <div className="fixed inset-0 z-[999] flex items-center justify-center tokenicode-modal-backdrop"
       onClick={onCancel}>
-      <div className="bg-bg-card rounded-2xl shadow-2xl p-6 flex flex-col items-center gap-4 w-[320px]"
+      <div className="tokenicode-modal-surface bg-bg-card rounded-2xl shadow-2xl p-6 flex flex-col items-center gap-4 w-[320px]"
         onClick={(e) => e.stopPropagation()}>
         {/* Title */}
         <div className="flex items-center justify-between w-full">

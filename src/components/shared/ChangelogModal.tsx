@@ -23,10 +23,10 @@ export function ChangelogModal({ version, onClose }: Props) {
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
+      <div className="absolute inset-0 tokenicode-modal-backdrop" />
 
       {/* Panel */}
-      <div className="relative w-[380px] max-h-[70vh] rounded-2xl bg-bg-card
+      <div className="tokenicode-modal-surface relative w-[380px] max-h-[70vh] rounded-2xl bg-bg-card
         border border-border-subtle shadow-lg overflow-hidden
         animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}

@@ -289,16 +289,40 @@ export function AppShell({ sidebar, main, secondary }: AppShellProps) {
     (responsiveShowSidebar ? effectiveSidebarWidth : 0) + secondaryPanelWidth + MIN_MAIN_WIDTH + PANEL_GAP
   );
   const showFloatingSecondary = secondaryPanelOpen && !responsiveShowSecondary;
-  const floatingSecondaryWidth = Math.min(secondaryPanelWidth, Math.max(MIN_PANEL_WIDTH, windowWidth - 16));
+  const isTightOverlayLayout = windowWidth < 1180;
+  const floatingSidebarWidth = Math.min(
+    effectiveSidebarWidth,
+    Math.max(196, Math.min(252, Math.round(windowWidth * 0.28))),
+  );
+  const floatingSecondaryWidth = Math.min(
+    secondaryPanelWidth,
+    Math.max(280, Math.min(380, Math.round(windowWidth * 0.34))),
+  );
+  const renderFloatingSidebar = showFloatingSidebar && !(showFloatingSecondary && isTightOverlayLayout);
   const hasCustomBackground = customBackgroundImageUrl.trim().length > 0;
   const backgroundEnhanceActive = hasCustomBackground && backgroundEnhanceEnabled;
-  const sidebarSurfaceClass = hasCustomBackground ? 'bg-bg-sidebar/80 backdrop-blur-2xl tokenicode-glass-surface' : 'bg-bg-sidebar';
-  const chatSurfaceClass = hasCustomBackground ? 'bg-bg-chat/80 backdrop-blur-2xl tokenicode-glass-surface' : 'bg-bg-chat';
+  const sidebarSurfaceClass = hasCustomBackground ? 'bg-transparent tokenicode-glass-surface' : 'bg-bg-sidebar';
+  const chatSurfaceClass = hasCustomBackground ? 'bg-transparent tokenicode-glass-surface' : 'bg-bg-chat';
   const clampedSurfaceOpacity = Math.max(0, Math.min(100, backgroundSurfaceOpacity));
   const surfaceOpacityRatio = clampedSurfaceOpacity / 100;
-  const enhancedSidebarOpacity = Math.min(98, Math.max(clampedSurfaceOpacity, 18) + 14);
-  const enhancedChatOpacity = Math.min(99, Math.max(clampedSurfaceOpacity, 16) + 18);
-  const enhancedTitlebarOpacity = Math.min(100, Math.max(clampedSurfaceOpacity, 22) + 16);
+  const baseGlassBlur = backgroundEnhanceActive
+    ? (clampedSurfaceOpacity <= 0 ? 8 : 8 + surfaceOpacityRatio * 10)
+    : (clampedSurfaceOpacity <= 0 ? 0 : 3 + surfaceOpacityRatio * 6);
+  const modalBackdropOpacity = backgroundEnhanceActive
+    ? (clampedSurfaceOpacity <= 0 ? 0.08 : 0.08 + surfaceOpacityRatio * 0.08)
+    : (clampedSurfaceOpacity <= 0 ? 0.02 : 0.03 + surfaceOpacityRatio * 0.05);
+  const modalBackdropBlur = backgroundEnhanceActive
+    ? (clampedSurfaceOpacity <= 0 ? 6 : 6 + surfaceOpacityRatio * 8)
+    : (clampedSurfaceOpacity <= 0 ? 0 : 2 + surfaceOpacityRatio * 4);
+  const modalSurfaceOpacity = backgroundEnhanceActive
+    ? (clampedSurfaceOpacity <= 0 ? 0.18 : Math.min(0.42, 0.18 + surfaceOpacityRatio * 0.22))
+    : (clampedSurfaceOpacity <= 0 ? 0.1 : Math.min(0.28, 0.1 + surfaceOpacityRatio * 0.14));
+  const modalSurfaceBlur = backgroundEnhanceActive
+    ? (clampedSurfaceOpacity <= 0 ? 10 : 10 + surfaceOpacityRatio * 10)
+    : (clampedSurfaceOpacity <= 0 ? 4 : 4 + surfaceOpacityRatio * 5);
+  const enhancedSidebarOpacity = clampedSurfaceOpacity <= 0 ? 0 : Math.min(94, clampedSurfaceOpacity + 8);
+  const enhancedChatOpacity = clampedSurfaceOpacity <= 0 ? 0 : Math.min(95, clampedSurfaceOpacity + 10);
+  const enhancedTitlebarOpacity = clampedSurfaceOpacity <= 0 ? 0 : Math.min(92, clampedSurfaceOpacity + 6);
   const customSidebarSurfaceStyle = hasCustomBackground
     ? {
         backgroundColor: `color-mix(in srgb, var(--color-bg-sidebar) ${backgroundEnhanceActive ? enhancedSidebarOpacity : clampedSurfaceOpacity}%, transparent)`,
@@ -311,13 +335,15 @@ export function AppShell({ sidebar, main, secondary }: AppShellProps) {
     : undefined;
   const customTitlebarStyle = hasCustomBackground
     ? {
-        backgroundColor: `color-mix(in srgb, var(--color-bg-chat) ${backgroundEnhanceActive ? enhancedTitlebarOpacity : Math.min(100, Math.max(4, clampedSurfaceOpacity + 6))}%, transparent)`,
+        backgroundColor: `color-mix(in srgb, var(--color-bg-chat) ${backgroundEnhanceActive ? enhancedTitlebarOpacity : clampedSurfaceOpacity}%, transparent)`,
       }
     : undefined;
   const customBackdropTintStyle = hasCustomBackground
     ? {
         background: backgroundEnhanceActive
-          ? (theme === 'dark'
+          ? (clampedSurfaceOpacity <= 0
+            ? 'transparent'
+            : theme === 'dark'
             ? `linear-gradient(180deg, rgba(3, 7, 18, ${0.08 + surfaceOpacityRatio * 0.10}), rgba(3, 7, 18, ${0.03 + surfaceOpacityRatio * 0.05})), radial-gradient(circle at 20% 18%, rgba(15, 23, 42, 0.18), transparent 34%), radial-gradient(circle at 82% 14%, rgba(15, 23, 42, 0.12), transparent 32%)`
             : `linear-gradient(180deg, rgba(255, 255, 255, ${0.16 + surfaceOpacityRatio * 0.08}), rgba(255, 255, 255, ${0.08 + surfaceOpacityRatio * 0.04})), radial-gradient(circle at 16% 16%, rgba(255, 255, 255, 0.18), transparent 34%), radial-gradient(circle at 84% 14%, rgba(255, 255, 255, 0.12), transparent 32%)`)
           : (theme === 'dark'
@@ -346,6 +372,20 @@ export function AppShell({ sidebar, main, secondary }: AppShellProps) {
     '--tokenicode-surface-highlight': backgroundEnhanceActive
       ? (theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.12)')
       : 'transparent',
+    '--tokenicode-glass-blur': `${baseGlassBlur.toFixed(1)}px`,
+    '--tokenicode-glass-saturate': backgroundEnhanceActive ? '1.08' : '1.02',
+    '--tokenicode-modal-backdrop': theme === 'dark'
+      ? `rgba(0, 0, 0, ${modalBackdropOpacity.toFixed(3)})`
+      : `rgba(255, 255, 255, ${(modalBackdropOpacity * 0.78).toFixed(3)})`,
+    '--tokenicode-modal-backdrop-blur': `${modalBackdropBlur.toFixed(1)}px`,
+    '--tokenicode-modal-surface-bg': theme === 'dark'
+      ? `rgba(17, 24, 39, ${modalSurfaceOpacity.toFixed(3)})`
+      : `rgba(255, 252, 247, ${(0.16 + modalSurfaceOpacity * 0.8).toFixed(3)})`,
+    '--tokenicode-modal-surface-blur': `${modalSurfaceBlur.toFixed(1)}px`,
+    '--tokenicode-modal-surface-saturate': backgroundEnhanceActive ? '1.06' : '1.02',
+    '--tokenicode-modal-border': theme === 'dark'
+      ? `rgba(255, 255, 255, ${(0.08 + surfaceOpacityRatio * 0.08).toFixed(3)})`
+      : `rgba(255, 255, 255, ${(0.26 + surfaceOpacityRatio * 0.14).toFixed(3)})`,
   } as CSSProperties : undefined;
   const stopWindowControlMouseDown = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
@@ -383,7 +423,7 @@ export function AppShell({ sidebar, main, secondary }: AppShellProps) {
       )}
       <div
         className={`relative z-20 flex items-center border-b border-border-subtle/80 px-3 ${
-          hasCustomBackground ? 'bg-bg-chat/75 backdrop-blur-2xl tokenicode-glass-surface tokenicode-glass-titlebar' : 'bg-bg-chat/95'
+          hasCustomBackground ? 'bg-transparent tokenicode-glass-surface tokenicode-glass-titlebar' : 'bg-bg-chat/95'
         }`}
         style={{ height: `${TITLEBAR_HEIGHT}px`, ...(customTitlebarStyle ?? {}) }}
       >
@@ -538,19 +578,24 @@ export function AppShell({ sidebar, main, secondary }: AppShellProps) {
       </div>
 
       {/* Floating Sidebar — overlay when file preview is active */}
-      {showFloatingSidebar && (
+      {renderFloatingSidebar && (
         <>
           <div
-            className="absolute inset-0 z-40 bg-black/10"
+            className="absolute inset-0 z-40"
+            style={hasCustomBackground ? {
+              backgroundColor: theme === 'dark'
+                ? `rgba(0, 0, 0, ${(surfaceOpacityRatio * 0.05).toFixed(3)})`
+                : `rgba(255, 255, 255, ${(surfaceOpacityRatio * 0.04).toFixed(3)})`,
+            } : undefined}
             onClick={toggleSidebar}
           />
           <div
             className="fixed left-0 bottom-0 z-50 flex animate-in slide-in-from-left duration-200"
-            style={{ top: `${TITLEBAR_HEIGHT}px`, width: `${effectiveSidebarWidth}px` }}
+            style={{ top: `${TITLEBAR_HEIGHT}px`, width: `${floatingSidebarWidth}px` }}
           >
             <div className={`flex-1 h-full overflow-y-auto ${sidebarSurfaceClass}
               border-r border-border-subtle shadow-lg`}
-              style={customSidebarSurfaceStyle}>
+              style={{ width: `${floatingSidebarWidth}px`, ...(customSidebarSurfaceStyle ?? {}) }}>
               {sidebar}
             </div>
           </div>
@@ -562,7 +607,12 @@ export function AppShell({ sidebar, main, secondary }: AppShellProps) {
         <>
           {/* Backdrop — click to dismiss */}
           <div
-            className="absolute inset-0 z-40 bg-black/10"
+            className="absolute inset-0 z-40"
+            style={hasCustomBackground ? {
+              backgroundColor: theme === 'dark'
+                ? `rgba(0, 0, 0, ${(surfaceOpacityRatio * 0.05).toFixed(3)})`
+                : `rgba(255, 255, 255, ${(surfaceOpacityRatio * 0.04).toFixed(3)})`,
+            } : undefined}
             onClick={toggleSecondaryPanel}
           />
           {/* Floating panel — anchored to right edge */}

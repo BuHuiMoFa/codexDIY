@@ -6644,6 +6644,84 @@ async fn set_git_remote_url(cwd: String, url: String, remote_name: Option<String
     Ok(trimmed_url)
 }
 
+#[tauri::command]
+async fn init_git_repository(cwd: String, remote_url: Option<String>, remote_name: Option<String>) -> Result<String, String> {
+    let remote_name = remote_name.unwrap_or_else(|| "origin".to_string());
+    validate_git_remote_name(&remote_name)?;
+
+    let cwd_path = std::path::Path::new(&cwd);
+    if !cwd_path.is_dir() {
+        return Err(format!("Working directory does not exist: {}", cwd));
+    }
+
+    let git_bin = resolved_git_bin_for_commands()?;
+
+    let mut init_cmd = Command::new(&git_bin);
+    init_cmd.args(["init"]).current_dir(&cwd);
+    #[cfg(target_os = "windows")]
+    init_cmd.creation_flags(0x08000000);
+    let init_output = init_cmd
+        .output()
+        .await
+        .map_err(|e| format!("Failed to run git: {}", e))?;
+
+    if !init_output.status.success() {
+        let stderr = String::from_utf8_lossy(&init_output.stderr).trim().to_string();
+        let stdout = String::from_utf8_lossy(&init_output.stdout).trim().to_string();
+        let detail = if !stderr.is_empty() { stderr } else { stdout };
+        return Err(if detail.is_empty() {
+            "Failed to initialize git repository".to_string()
+        } else {
+            detail
+        });
+    }
+
+    let trimmed_remote = remote_url.unwrap_or_default().trim().to_string();
+    if trimmed_remote.is_empty() {
+        return Ok(String::new());
+    }
+
+    validate_git_remote_url(&trimmed_remote)?;
+
+    let mut probe = Command::new(&git_bin);
+    probe.args(["remote", "get-url", &remote_name]).current_dir(&cwd);
+    #[cfg(target_os = "windows")]
+    probe.creation_flags(0x08000000);
+    let remote_exists = probe
+        .output()
+        .await
+        .map_err(|e| format!("Failed to run git: {}", e))?
+        .status
+        .success();
+
+    let mut remote_cmd = Command::new(&git_bin);
+    if remote_exists {
+        remote_cmd.args(["remote", "set-url", &remote_name, &trimmed_remote]);
+    } else {
+        remote_cmd.args(["remote", "add", &remote_name, &trimmed_remote]);
+    }
+    remote_cmd.current_dir(&cwd);
+    #[cfg(target_os = "windows")]
+    remote_cmd.creation_flags(0x08000000);
+    let remote_output = remote_cmd
+        .output()
+        .await
+        .map_err(|e| format!("Failed to run git: {}", e))?;
+
+    if !remote_output.status.success() {
+        let stderr = String::from_utf8_lossy(&remote_output.stderr).trim().to_string();
+        let stdout = String::from_utf8_lossy(&remote_output.stdout).trim().to_string();
+        let detail = if !stderr.is_empty() { stderr } else { stdout };
+        return Err(if detail.is_empty() {
+            "Failed to bind git remote".to_string()
+        } else {
+            detail
+        });
+    }
+
+    Ok(trimmed_remote)
+}
+
 /// Rewind files to a CLI checkpoint via `claude --resume <session_id> --rewind-files <uuid>`.
 /// This delegates file restoration to the CLI's native checkpoint system.
 #[tauri::command]
@@ -9405,6 +9483,7 @@ pub fn run() {
             run_git_command,
             get_git_remote_url,
             set_git_remote_url,
+            init_git_repository,
             rewind_files,
             set_dock_icon,
             run_claude_command,

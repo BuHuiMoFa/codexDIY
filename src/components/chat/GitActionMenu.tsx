@@ -64,7 +64,7 @@ function tabLabel(tab: GitTab) {
     case 'unstaged': return '未暂存';
     case 'staged': return '已暂存';
     case 'commit': return '提交';
-    case 'branch': return '分支';
+    case 'branch': return '分支/仓库';
     case 'rewind': return '上一轮';
   }
 }
@@ -255,7 +255,60 @@ export function GitActionMenu() {
             ) : !workingDirectory ? (
               <div className="py-10 text-center text-sm text-text-tertiary">请先选择一个工作目录。</div>
             ) : notRepo ? (
-              <div className="py-10 text-center text-sm text-text-tertiary">当前目录不是 Git 仓库，所以这些功能暂时不可用。</div>
+              activeTab === 'branch' ? (
+                <div className="space-y-3">
+                  <div className="rounded-xl border border-border-subtle bg-bg-secondary/45 p-3">
+                    <div className="text-xs font-semibold text-text-primary">当前目录还不是 Git 仓库</div>
+                    <div className="mt-1 text-[11px] leading-5 text-text-tertiary">
+                      你可以在这里直接初始化 Git 仓库，并且同时绑定 GitHub 仓库地址。
+                    </div>
+                    <div className="mt-3 flex flex-col gap-2">
+                      <input
+                        value={remoteInput}
+                        onChange={(event) => setRemoteInput(event.target.value)}
+                        placeholder="https://github.com/用户名/仓库.git"
+                        className="w-full rounded-xl border border-border-subtle bg-bg-card px-3 py-2 text-sm text-text-primary outline-none focus:border-border-focus"
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => withAction(
+                            'init-repo',
+                            async () => {
+                              if (!workingDirectory) return;
+                              await bridge.initGitRepository(workingDirectory, null, 'origin');
+                            },
+                            '已初始化 Git 仓库',
+                          )}
+                          disabled={!!actionLoading}
+                          className="rounded-lg bg-bg-card px-3 py-2 text-[11px] text-text-primary disabled:opacity-40"
+                        >
+                          初始化仓库
+                        </button>
+                        <button
+                          onClick={() => withAction(
+                            'init-repo-remote',
+                            async () => {
+                              if (!workingDirectory) return;
+                              const updatedUrl = await bridge.initGitRepository(workingDirectory, remoteInput.trim(), 'origin');
+                              setRemoteUrl(updatedUrl);
+                              setRemoteInput(updatedUrl);
+                            },
+                            '已初始化仓库并绑定地址',
+                          )}
+                          disabled={!remoteInput.trim() || !!actionLoading}
+                          className="rounded-lg bg-accent px-3 py-2 text-[11px] text-text-inverse disabled:opacity-40"
+                        >
+                          初始化并绑定地址
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="py-10 text-center text-sm text-text-tertiary">
+                  当前目录还不是 Git 仓库。切到“分支/仓库”页签后，可以直接初始化并绑定 Git 地址。
+                </div>
+              )
             ) : (
               <>
                 {activeTab === 'unstaged' && (

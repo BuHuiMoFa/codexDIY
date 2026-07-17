@@ -1070,6 +1070,7 @@ export function ChatPanel() {
   const sessionMeta = useActiveTab((t) => t.sessionMeta);
   const activityStatus = useActiveTab((t) => t.activityStatus);
   const sidebarOpen = useSettingsStore((s) => s.sidebarOpen);
+  const secondaryPanelOpen = useSettingsStore((s) => s.secondaryPanelOpen);
   const toggleSidebar = useSettingsStore((s) => s.toggleSidebar);
   const toggleSecondaryTab = useSettingsStore((s) => s.toggleSecondaryTab);
   const agentPanelOpen = useSettingsStore((s) => s.agentPanelOpen);
@@ -1604,6 +1605,7 @@ export function ChatPanel() {
   const isVeryCompactHeader = headerWidth > 0 && headerWidth < 940;
   const isUltraCompactHeader = headerWidth > 0 && headerWidth < 820;
   const isEdgeCompactHeader = headerWidth > 0 && headerWidth < 700;
+  const shouldShowSidebarToggle = !sidebarOpen || isFilePreviewMode || (secondaryPanelOpen && isCompactHeader);
 
   const renderDisplayEntry = (item: BaseDisplayItem) => {
     if (item.kind === 'tool_group') {
@@ -1641,7 +1643,7 @@ export function ChatPanel() {
         ${isUltraCompactHeader ? 'px-2.5 gap-1.5' : isCompactHeader ? 'px-3 gap-2' : 'px-5 gap-3'}`}>
         {/* Show sidebar toggle when sidebar is not visible:
             either user closed it, or it's hidden by file preview mode */}
-        {(!sidebarOpen || isFilePreviewMode) && (
+        {shouldShowSidebarToggle && (
           <button onClick={toggleSidebar}
             className="p-1.5 rounded-lg hover:bg-bg-tertiary text-text-tertiary
               transition-smooth mr-3 flex-shrink-0" title={t('chat.showSidebar')}>

@@ -134,10 +134,10 @@ export function CommandPalette() {
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh]"
       onClick={() => setOpen(false)}>
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+      <div className="absolute inset-0 tokenicode-modal-backdrop" />
 
       {/* Palette */}
-      <div className="relative w-full max-w-lg mx-4 rounded-2xl
+      <div className="tokenicode-modal-surface relative w-full max-w-lg mx-4 rounded-2xl
         bg-bg-primary border border-border-subtle shadow-2xl
         overflow-hidden animate-fade-in"
         onClick={(e) => e.stopPropagation()}>

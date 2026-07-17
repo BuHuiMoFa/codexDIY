@@ -332,8 +332,8 @@ export function PreviewPanel() {
         </div>
 
         <div className="mt-4 rounded-2xl border border-border-subtle bg-bg-card/80 p-3 shadow-sm">
-          <div className="flex items-center gap-1.5">
-            <div className="flex items-center gap-1 rounded-xl border border-border-subtle bg-bg-secondary/60 px-1 py-1">
+          <div className="flex flex-col gap-2 xl:flex-row xl:items-center">
+            <div className="flex items-center gap-1 rounded-xl border border-border-subtle bg-bg-secondary/60 px-1 py-1 self-start">
               <button
                 onClick={back}
                 disabled={!canGoBack}
@@ -384,7 +384,7 @@ export function PreviewPanel() {
 
             <button
               onClick={submitUrl}
-              className="preview-icon-btn rounded-xl border border-border-subtle bg-bg-secondary/60"
+              className="preview-icon-btn rounded-xl border border-border-subtle bg-bg-secondary/60 self-end xl:self-auto"
               title={t('preview.open')}
             >
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -448,21 +448,21 @@ export function PreviewPanel() {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 p-4">
+      <div className="flex-1 min-h-0 p-3 sm:p-4">
         <div className="relative h-full overflow-hidden rounded-3xl border border-border-subtle bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
           {url === 'about:blank' ? (
-            <div className="flex h-full items-center justify-center bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.96))] px-6">
-              <div className="w-full max-w-md rounded-3xl border border-border-subtle bg-bg-primary/92 p-6 text-center shadow-sm">
+            <div className="flex h-full min-h-0 items-center justify-center overflow-auto bg-[linear-gradient(180deg,rgba(249,250,252,0.98),rgba(237,242,248,0.96))] px-3 py-4 sm:px-6">
+              <div className="w-full max-w-[min(100%,30rem)] rounded-[28px] border border-border-subtle bg-bg-primary/92 p-4 text-center shadow-sm sm:p-6">
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-border-subtle bg-bg-secondary/65 text-text-primary">
                   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="4" width="18" height="14" rx="3" />
                     <path d="M8 20h8" />
                   </svg>
                 </div>
-                <div className="mt-4 text-base font-semibold text-text-primary">
+                <div className="mt-4 text-base font-semibold text-text-primary sm:text-[17px]">
                   {uiText.blankTitle}
                 </div>
-                <div className="mt-2 text-sm leading-6 text-text-secondary">
+                <div className="mt-2 text-sm leading-6 text-text-secondary sm:text-[15px]">
                   {uiText.blankBody}
                 </div>
                 <div className="mt-5 flex justify-center">

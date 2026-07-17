@@ -16,12 +16,12 @@ export function Sidebar() {
   const sidebarWidth = useSettingsStore((s) => s.sidebarWidth);
   const sessions = useSessionStore((s) => s.sessions);
   const t = useT();
-  const compact = sidebarWidth <= 240;
+  const compact = sidebarWidth <= 280;
 
   return (
     <div className={`flex h-full flex-col ${compact ? 'pt-6 pb-3' : 'pt-8 pb-4'}`}>
-      <div className={`${compact ? 'mb-4 px-4' : 'mb-5 px-5'} flex items-center justify-between cursor-default`}>
-        <div className="flex items-center">
+      <div className={`${compact ? 'mb-4 px-3.5' : 'mb-5 px-5'} flex min-w-0 items-center justify-between gap-2 cursor-default`}>
+        <div className="flex min-w-0 flex-1 items-center">
           {IS_ALPHA ? (
             <>
               <span className="text-[14px] font-bold tracking-tight text-text-primary">
@@ -32,15 +32,15 @@ export function Sidebar() {
               </span>
             </>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 items-center gap-2">
               <button
                 onClick={() => setProfileOpen(true)}
-                className="rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/40"
+                className="flex-shrink-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/40"
                 title="个人资料"
               >
                 <img src="/app-icon.png" alt="" className={`${compact ? 'h-7 w-7' : 'h-8 w-8'} rounded-lg shadow-sm`} />
               </button>
-              <span className={`${compact ? 'text-[16px]' : 'text-[18px]'} font-bold tracking-wide text-text-primary`}>
+              <span className={`min-w-0 truncate ${compact ? 'text-[15px]' : 'text-[18px]'} font-bold tracking-[0.08em] text-text-primary`}>
                 TOKEN<span className="text-accent">/</span>CODE
               </span>
             </div>
@@ -48,7 +48,7 @@ export function Sidebar() {
         </div>
         <button
           onClick={toggleSidebar}
-          className="rounded-lg p-1.5 text-text-tertiary transition-smooth hover:bg-bg-tertiary"
+          className="flex-shrink-0 rounded-lg p-1.5 text-text-tertiary transition-smooth hover:bg-bg-tertiary"
           title={t('sidebar.hide')}
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">

@@ -31,11 +31,11 @@ export function ConfirmDialog({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40"
+      className="fixed inset-0 z-[10000] flex items-center justify-center tokenicode-modal-backdrop"
       onClick={onCancel}
     >
       <div
-        className="bg-bg-card border border-border-subtle rounded-xl p-5
+        className="tokenicode-modal-surface bg-bg-card border border-border-subtle rounded-xl p-5
           shadow-lg max-w-sm w-full mx-4 animate-fade-in"
         onClick={(e) => e.stopPropagation()}
       >

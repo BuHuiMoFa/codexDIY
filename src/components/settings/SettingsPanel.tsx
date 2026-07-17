@@ -79,10 +79,10 @@ export function SettingsPanel() {
       onMouseDown={(e) => { if (e.target === e.currentTarget) toggleSettings(); }}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
+      <div className="absolute inset-0 tokenicode-modal-backdrop" />
 
       {/* Panel */}
-      <div className="relative w-[min(90vw,960px)] max-h-[85vh] min-h-[500px]
+      <div className="tokenicode-modal-surface relative w-[min(90vw,960px)] max-h-[85vh] min-h-[500px]
         rounded-2xl bg-bg-card border border-border-subtle shadow-2xl
         overflow-hidden animate-fade-in flex flex-col">
 

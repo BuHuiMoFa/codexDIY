@@ -1176,6 +1176,12 @@ button {
 }
 
 .has-custom-background .tokenicode-glass-surface,
+.has-custom-background .tokenicode-glass-titlebar {
+  backdrop-filter: blur(var(--tokenicode-glass-blur, 8px)) saturate(var(--tokenicode-glass-saturate, 1.02));
+  -webkit-backdrop-filter: blur(var(--tokenicode-glass-blur, 8px)) saturate(var(--tokenicode-glass-saturate, 1.02));
+}
+
+.has-custom-background .tokenicode-glass-surface,
 .has-custom-background .tokenicode-glass-surface .text-text-primary,
 .has-custom-background .tokenicode-glass-surface .text-text-secondary,
 .has-custom-background .tokenicode-glass-surface .text-text-tertiary,
@@ -1196,10 +1202,18 @@ button {
   box-shadow: 0 14px 34px rgba(15, 23, 42, 0.16), 0 4px 14px rgba(15, 23, 42, 0.08);
 }
 
-.has-background-enhance .tokenicode-glass-surface,
-.has-background-enhance .tokenicode-glass-titlebar {
-  backdrop-filter: blur(28px) saturate(1.12);
-  -webkit-backdrop-filter: blur(28px) saturate(1.12);
+.has-custom-background .tokenicode-modal-backdrop {
+  background: var(--tokenicode-modal-backdrop, rgba(0, 0, 0, 0.16));
+  backdrop-filter: blur(var(--tokenicode-modal-backdrop-blur, 6px));
+  -webkit-backdrop-filter: blur(var(--tokenicode-modal-backdrop-blur, 6px));
+}
+
+.has-custom-background .tokenicode-modal-surface {
+  background-color: var(--tokenicode-modal-surface-bg, rgba(17, 24, 39, 0.22)) !important;
+  border-color: var(--tokenicode-modal-border, rgba(255, 255, 255, 0.12)) !important;
+  backdrop-filter: blur(var(--tokenicode-modal-surface-blur, 10px)) saturate(var(--tokenicode-modal-surface-saturate, 1.02));
+  -webkit-backdrop-filter: blur(var(--tokenicode-modal-surface-blur, 10px)) saturate(var(--tokenicode-modal-surface-saturate, 1.02));
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.18), 0 8px 18px rgba(15, 23, 42, 0.08);
 }
 
 .has-background-enhance .tokenicode-glass-surface .text-text-primary,
