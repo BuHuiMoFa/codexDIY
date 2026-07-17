@@ -440,12 +440,12 @@ fn extract_docx_text(xml: &str) -> String {
 }
 
 const XLSX_PREVIEW_PREFIX: &str = "__TOKENICODE_XLSX_PREVIEW__";
-const MAX_XLSX_PREVIEW_ROWS: usize = 200;
-const MAX_XLSX_PREVIEW_COLS: usize = 32;
-const MAX_OFFICE_REVIEW_BYTES: u64 = 120_000_000;
-const MAX_BINARY_PREVIEW_BYTES: u64 = 120_000_000;
-const MAX_ARCHIVE_PREVIEW_BYTES: u64 = 512_000_000;
-const MAX_ARCHIVE_PREVIEW_ENTRIES: usize = 2_000;
+const MAX_XLSX_PREVIEW_ROWS: usize = usize::MAX;
+const MAX_XLSX_PREVIEW_COLS: usize = usize::MAX;
+const MAX_OFFICE_REVIEW_BYTES: u64 = u64::MAX;
+const MAX_BINARY_PREVIEW_BYTES: u64 = u64::MAX;
+const MAX_ARCHIVE_PREVIEW_BYTES: u64 = u64::MAX;
+const MAX_ARCHIVE_PREVIEW_ENTRIES: usize = usize::MAX;
 const MAX_XLSX_PREVIEW_IMAGES: usize = 128;
 const MAX_XLSX_PREVIEW_IMAGE_BYTES: usize = 4_000_000;
 const MAX_XLSX_PREVIEW_TOTAL_IMAGE_BYTES: usize = 24_000_000;
@@ -4511,6 +4511,49 @@ fn reject_unsafe_path(path: &str) -> Result<(), String> {
     Ok(())
 }
 
+fn read_text_file_lossy(path: &str) -> Result<String, String> {
+    let bytes = std::fs::read(path).map_err(|e| format!("Cannot read file: {}", e))?;
+    Ok(String::from_utf8_lossy(&bytes).into_owned())
+}
+
+fn validate_git_remote_name(remote_name: &str) -> Result<(), String> {
+    if remote_name.is_empty() {
+        return Err("Remote name cannot be empty".to_string());
+    }
+    if remote_name.contains('\0') {
+        return Err("Remote name must not contain null bytes".to_string());
+    }
+    if !remote_name
+        .chars()
+        .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_' | '.'))
+    {
+        return Err("Remote name contains unsupported characters".to_string());
+    }
+    Ok(())
+}
+
+fn validate_git_remote_url(url: &str) -> Result<(), String> {
+    if url.trim().is_empty() {
+        return Err("Git repository URL cannot be empty".to_string());
+    }
+    if url.contains('\0') || url.contains('\n') || url.contains('\r') {
+        return Err("Git repository URL contains unsupported characters".to_string());
+    }
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn resolved_git_bin_for_commands() -> Result<String, String> {
+    resolve_git_binary()
+        .map(|value| value.to_string_lossy().to_string())
+        .ok_or_else(|| "git not available (no Xcode CLT or Homebrew git found)".to_string())
+}
+
+#[cfg(not(target_os = "macos"))]
+fn resolved_git_bin_for_commands() -> Result<String, String> {
+    Ok("git".to_string())
+}
+
 #[tauri::command]
 async fn read_file_content(path: String) -> Result<String, String> {
     reject_unsafe_path(&path)?;
@@ -4585,12 +4628,7 @@ async fn read_file_content(path: String) -> Result<String, String> {
             }
             preview_via_7zip(&path, "7z")
         }
-        _ => {
-            if metadata.len() > 1_048_576 {
-                return Err("File too large (>1MB)".to_string());
-            }
-            std::fs::read_to_string(&path).map_err(|e| format!("Cannot read file: {}", e))
-        }
+        _ => read_text_file_lossy(&path),
     }
 }
 
@@ -6523,6 +6561,87 @@ async fn run_git_command(cwd: String, args: Vec<String>) -> Result<String, Strin
     }
 
     Ok(String::from_utf8_lossy(&output.stdout).to_string())
+}
+
+#[tauri::command]
+async fn get_git_remote_url(cwd: String, remote_name: Option<String>) -> Result<Option<String>, String> {
+    let remote_name = remote_name.unwrap_or_else(|| "origin".to_string());
+    validate_git_remote_name(&remote_name)?;
+
+    let cwd_path = std::path::Path::new(&cwd);
+    if !cwd_path.is_dir() {
+        return Err(format!("Working directory does not exist: {}", cwd));
+    }
+
+    let git_bin = resolved_git_bin_for_commands()?;
+    let mut cmd = Command::new(&git_bin);
+    cmd.args(["remote", "get-url", &remote_name]).current_dir(&cwd);
+    #[cfg(target_os = "windows")]
+    cmd.creation_flags(0x08000000);
+    let output = cmd
+        .output()
+        .await
+        .map_err(|e| format!("Failed to run git: {}", e))?;
+
+    if !output.status.success() {
+        return Ok(None);
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    Ok((!stdout.is_empty()).then_some(stdout))
+}
+
+#[tauri::command]
+async fn set_git_remote_url(cwd: String, url: String, remote_name: Option<String>) -> Result<String, String> {
+    let remote_name = remote_name.unwrap_or_else(|| "origin".to_string());
+    validate_git_remote_name(&remote_name)?;
+    validate_git_remote_url(&url)?;
+
+    let cwd_path = std::path::Path::new(&cwd);
+    if !cwd_path.is_dir() {
+        return Err(format!("Working directory does not exist: {}", cwd));
+    }
+
+    let trimmed_url = url.trim().to_string();
+    let git_bin = resolved_git_bin_for_commands()?;
+
+    let mut probe = Command::new(&git_bin);
+    probe.args(["remote", "get-url", &remote_name]).current_dir(&cwd);
+    #[cfg(target_os = "windows")]
+    probe.creation_flags(0x08000000);
+    let remote_exists = probe
+        .output()
+        .await
+        .map_err(|e| format!("Failed to run git: {}", e))?
+        .status
+        .success();
+
+    let mut cmd = Command::new(&git_bin);
+    if remote_exists {
+        cmd.args(["remote", "set-url", &remote_name, &trimmed_url]);
+    } else {
+        cmd.args(["remote", "add", &remote_name, &trimmed_url]);
+    }
+    cmd.current_dir(&cwd);
+    #[cfg(target_os = "windows")]
+    cmd.creation_flags(0x08000000);
+    let output = cmd
+        .output()
+        .await
+        .map_err(|e| format!("Failed to run git: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        let detail = if !stderr.is_empty() { stderr } else { stdout };
+        return Err(if detail.is_empty() {
+            "Failed to update git remote".to_string()
+        } else {
+            detail
+        });
+    }
+
+    Ok(trimmed_url)
 }
 
 /// Rewind files to a CLI checkpoint via `claude --resume <session_id> --rewind-files <uuid>`.
@@ -9284,6 +9403,8 @@ pub fn run() {
             translate_skill_metadata,
             translate_skill_markdown,
             run_git_command,
+            get_git_remote_url,
+            set_git_remote_url,
             rewind_files,
             set_dock_icon,
             run_claude_command,

@@ -1,3 +1,4 @@
+import { convertFileSrc } from '@tauri-apps/api/core';
 import { create } from 'zustand';
 import { bridge, FileNode, RecentProject } from '../lib/tauri-bridge';
 
@@ -27,6 +28,10 @@ const BINARY_PLACEHOLDER_EXTS = new Set([
   'woff', 'woff2', 'ttf', 'otf', 'eot', 'db', 'sqlite',
 ]);
 const XLSX_PREVIEW_PREFIX = '__TOKENICODE_XLSX_PREVIEW__';
+
+function buildPreviewAssetUrl(path: string): string {
+  return `${convertFileSrc(path)}?v=${Date.now()}`;
+}
 
 function isArchivePreviewPath(path: string): boolean {
   const lower = path.toLowerCase();
@@ -302,16 +307,8 @@ export const useFileStore = create<FileState>()((set, get) => ({
       const ext = path.split('.').pop()?.toLowerCase() || '';
 
       if (DATA_URL_PREVIEW_EXTS.has(ext)) {
-        // Load binary files as base64 data URL for rendering in webview
-        try {
-          const dataUrl = await bridge.readFileBase64(path);
-          if (get().selectedFile === path) {
-            set({ fileContent: dataUrl, isLoadingContent: false });
-          }
-        } catch {
-          if (get().selectedFile === path) {
-            set({ fileContent: null, isLoadingContent: false });
-          }
+        if (get().selectedFile === path) {
+          set({ fileContent: buildPreviewAssetUrl(path), isLoadingContent: false });
         }
       } else if (isArchivePreviewPath(path)) {
         try {
@@ -413,8 +410,9 @@ export const useFileStore = create<FileState>()((set, get) => ({
     try {
       const ext = path.split('.').pop()?.toLowerCase() || '';
       if (DATA_URL_PREVIEW_EXTS.has(ext)) {
-        const dataUrl = await bridge.readFileBase64(path);
-        if (get().selectedFile === path) set({ fileContent: dataUrl });
+        if (get().selectedFile === path) {
+          set({ fileContent: buildPreviewAssetUrl(path) });
+        }
       } else if (isArchivePreviewPath(path)) {
         const content = await bridge.readFileContent(path);
         if (get().selectedFile === path) {

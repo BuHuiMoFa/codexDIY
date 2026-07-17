@@ -530,7 +530,7 @@ export function FilePreview() {
             </div>
           </div>
         ) : isImage && selectedFile && fileContent ? (
-          /* Image preview: use base64 data URL from Rust backend */
+          /* Image preview: use Tauri asset URL so large files do not need base64 encoding */
           <div className="flex items-center justify-center h-full p-4 overflow-auto">
             <img
               src={fileContent}
@@ -540,7 +540,7 @@ export function FilePreview() {
             />
           </div>
         ) : isPdf && selectedFile && fileContent ? (
-          /* PDF preview: iframe with base64 data URL */
+          /* PDF preview: iframe with local asset URL */
           <div className="flex flex-col h-full">
             <iframe
               src={fileContent}
@@ -559,7 +559,7 @@ export function FilePreview() {
             </div>
           </div>
         ) : isVideo && selectedFile && fileContent ? (
-          /* Video preview: native <video> with base64 data URL */
+          /* Video preview: native <video> with local asset URL */
           <div className="flex items-center justify-center h-full p-4">
             <video
               src={fileContent}
@@ -568,7 +568,7 @@ export function FilePreview() {
             />
           </div>
         ) : isAudio && selectedFile && fileContent ? (
-          /* Audio preview: icon + native <audio> with base64 data URL */
+          /* Audio preview: icon + native <audio> with local asset URL */
           <div className="flex flex-col items-center justify-center h-full gap-4 p-4">
             <FileIcon name={fileName} size={48} className="text-text-tertiary" />
             <audio

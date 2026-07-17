@@ -89,6 +89,8 @@ export function GitActionMenu() {
   const [commits, setCommits] = useState<GitCommitEntry[]>([]);
   const [commitMessage, setCommitMessage] = useState('');
   const [newBranchName, setNewBranchName] = useState('');
+  const [remoteUrl, setRemoteUrl] = useState('');
+  const [remoteInput, setRemoteInput] = useState('');
 
   const recentTurns = useMemo(() => turns.slice(0, -1).slice(-6).reverse(), [turns]);
 
@@ -125,11 +127,12 @@ export function GitActionMenu() {
     }
 
     try {
-      const [statusOutput, branchOutput, branchListOutput, commitOutput] = await Promise.all([
+      const [statusOutput, branchOutput, branchListOutput, commitOutput, fetchedRemoteUrl] = await Promise.all([
         runGit(['status', '--porcelain', '-b']),
         runGit(['branch', '--show-current']),
         runGit(['branch', '--format=%(refname:short)']),
         runGit(['log', '--oneline', '-n', '12']),
+        bridge.getGitRemoteUrl(workingDirectory, 'origin'),
       ]);
       const statusEntries = parseStatusEntries(statusOutput);
       setNotRepo(false);
@@ -138,6 +141,8 @@ export function GitActionMenu() {
       setStaged(statusEntries.filter((entry) => entry.path && entry.x !== ' ' && entry.x !== '?'));
       setBranches(branchListOutput.split(/\r?\n/).map((line) => line.trim()).filter(Boolean));
       setCommits(parseCommits(commitOutput));
+      setRemoteUrl(fetchedRemoteUrl?.trim() || '');
+      setRemoteInput(fetchedRemoteUrl?.trim() || '');
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -402,6 +407,37 @@ export function GitActionMenu() {
                           className="rounded-lg bg-bg-card px-3 py-2 text-[11px] text-text-primary disabled:opacity-40"
                         >
                           新建
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-border-subtle bg-bg-secondary/45 p-3">
+                      <div className="text-xs font-semibold text-text-primary">Git 仓库地址</div>
+                      <div className="mt-1 break-all text-[11px] text-text-tertiary">
+                        {remoteUrl || '当前还没有绑定 origin 仓库地址'}
+                      </div>
+                      <div className="mt-3 flex gap-2">
+                        <input
+                          value={remoteInput}
+                          onChange={(event) => setRemoteInput(event.target.value)}
+                          placeholder="https://github.com/用户名/仓库.git"
+                          className="flex-1 rounded-xl border border-border-subtle bg-bg-card px-3 py-2 text-sm text-text-primary outline-none focus:border-border-focus"
+                        />
+                        <button
+                          onClick={() => withAction(
+                            'set-remote',
+                            async () => {
+                              if (!workingDirectory) return;
+                              const updatedUrl = await bridge.setGitRemoteUrl(workingDirectory, remoteInput.trim(), 'origin');
+                              setRemoteUrl(updatedUrl);
+                              setRemoteInput(updatedUrl);
+                            },
+                            remoteUrl ? '已更新仓库地址' : '已添加仓库地址',
+                          )}
+                          disabled={!remoteInput.trim() || !!actionLoading}
+                          className="rounded-lg bg-bg-card px-3 py-2 text-[11px] text-text-primary disabled:opacity-40"
+                        >
+                          {remoteUrl ? '更新地址' : '添加地址'}
                         </button>
                       </div>
                     </div>

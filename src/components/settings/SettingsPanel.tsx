@@ -1,14 +1,16 @@
 import { useEffect, useState, useCallback } from 'react';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useT } from '../../lib/i18n';
 import { APP_NAME } from '../../lib/edition';
-import { ChangelogModal } from '../shared/ChangelogModal';
 import { isPermissionError, isNetworkError } from './settingsUtils';
 import { GeneralTab } from './GeneralTab';
 import { ProviderTab } from './ProviderTab';
 import { CliTab } from './CliTab';
 import { McpTab } from './McpTab';
 import { LocalModelsTab } from './LocalModelsTab';
+
+const REPOSITORY_URL = 'https://github.com/BuHuiMoFa/codexDIY';
 
 type SettingsTab = 'general' | 'provider' | 'cli' | 'localModels' | 'mcp';
 
@@ -53,7 +55,7 @@ const TAB_ITEMS: { id: SettingsTab; labelKey: string }[] = [
   { id: 'general', labelKey: 'settings.tab.general' },
   { id: 'provider', labelKey: 'settings.tab.provider' },
   { id: 'cli', labelKey: 'settings.tab.cli' },
-  { id: 'localModels', labelKey: '本地模型' },
+  { id: 'localModels', labelKey: 'settings.tab.localModels' },
   { id: 'mcp', labelKey: 'settings.tab.mcp' },
 ];
 
@@ -156,7 +158,6 @@ function SettingsFooter() {
   const [updateInfo, setUpdateInfo] = useState<UpdateHandle>(null);
   const [progress, setProgress] = useState(0);
   const [errorMsg, setErrorMsg] = useState('');
-  const [showChangelog, setShowChangelog] = useState(false);
   const storeUpdateVersion = useSettingsStore((s) => s.updateVersion);
 
   useEffect(() => {
@@ -245,7 +246,9 @@ function SettingsFooter() {
         <div className="flex items-center gap-2">
           {/* Changelog */}
           <button
-            onClick={() => setShowChangelog(true)}
+            onClick={() => {
+              void openUrl(REPOSITORY_URL);
+            }}
             className="px-2.5 py-1 text-xs font-medium rounded-md
               text-text-muted hover:bg-bg-secondary hover:text-text-primary transition-smooth"
           >
@@ -332,13 +335,6 @@ function SettingsFooter() {
         </div>
       </div>
 
-      {/* Changelog modal */}
-      {showChangelog && appVersion && (
-        <ChangelogModal
-          version={appVersion}
-          onClose={() => setShowChangelog(false)}
-        />
-      )}
     </>
   );
 }

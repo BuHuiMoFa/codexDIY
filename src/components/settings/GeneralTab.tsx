@@ -30,73 +30,73 @@ const TIER_MAP: Record<string, string> = {
 };
 
 const COLOR_THEMES: Array<{ id: ColorTheme; label: string; color: string }> = [
-  { id: 'black', label: 'Classic Black', color: '#333333' },
-  { id: 'blue', label: '娓呴€忚摑', color: '#4E80F7' },
-  { id: 'orange', label: 'Warm Orange', color: '#C47252' },
-  { id: 'green', label: 'Pine Green', color: '#57A64B' },
+  { id: 'black', label: '经典黑', color: '#333333' },
+  { id: 'blue', label: '清透蓝', color: '#4E80F7' },
+  { id: 'orange', label: '暖橙', color: '#C47252' },
+  { id: 'green', label: '松针绿', color: '#57A64B' },
 ];
 
 const BACKGROUND_THEMES: Array<{ id: BackgroundTheme; label: string; accent: string; preview: string }> = [
   {
     id: 'garden',
-    label: '鑺卞洯',
+    label: '花园',
     accent: '#D9857A',
     preview: 'radial-gradient(circle at 15% 90%, #AFCB8C 0 18%, transparent 20%), linear-gradient(135deg, #FFF8EA, #F7D9C6)',
   },
   {
     id: 'sakura',
-    label: '妯遍浘',
+    label: '樱雾',
     accent: '#C97D98',
     preview: 'radial-gradient(circle at 85% 18%, #F2B7C9 0 20%, transparent 22%), linear-gradient(135deg, #FFF4F7, #F7E6CF)',
   },
   {
     id: 'lake',
-    label: '婀栬摑',
+    label: '湖蓝',
     accent: '#6D9CB8',
     preview: 'radial-gradient(circle at 15% 85%, #A9CFBF 0 18%, transparent 20%), linear-gradient(135deg, #F3FBF8, #DCEEF4)',
   },
   {
     id: 'dusk',
-    label: '鏆传',
+    label: '暮紫',
     accent: '#9A83B8',
     preview: 'radial-gradient(circle at 82% 18%, #D8B6C9 0 20%, transparent 22%), linear-gradient(135deg, #F7F1FB, #E9DFD1)',
   },
   {
     id: 'ink',
-    label: '澧ㄧ焊',
+    label: '墨纸',
     accent: '#7E8792',
     preview: 'radial-gradient(circle at 18% 90%, #C4CABA 0 18%, transparent 20%), linear-gradient(135deg, #F8F5EC, #E6E2D5)',
   },
   {
     id: 'vscode',
-    label: 'VS Code Dark',
+    label: 'VS Code 深色',
     accent: '#007ACC',
     preview: 'linear-gradient(90deg, #252526 0 24%, #1E1E1E 24% 100%)',
   },
   {
     id: 'minimal',
-    label: '绠€鐧芥瀬绠€',
+    label: '极简留白',
     accent: '#111827',
     preview: 'linear-gradient(90deg, #F7F7F8 0 24%, #FFFFFF 24% 100%)',
   },
 ];
 
 const FONT_FAMILY_OPTIONS: Array<{ id: FontFamily; label: string; sample: string }> = [
-  { id: 'microsoft', label: '寰蒋闆呴粦 UI', sample: '涓枃 Aa 123' },
-  { id: 'system', label: '绯荤粺榛樿', sample: '涓枃 Aa 123' },
-  { id: 'sourceHan', label: '鎬濇簮榛戜綋 / Noto', sample: '涓枃 Aa 123' },
-  { id: 'lxgw', label: '闇為箿鏂囨シ', sample: '涓枃 Aa 123' },
-  { id: 'mono', label: '绛夊瀛椾綋', sample: '涓枃 Aa 123' },
+  { id: 'microsoft', label: '微软雅黑 UI', sample: '中文 Aa 123' },
+  { id: 'system', label: '系统默认', sample: '中文 Aa 123' },
+  { id: 'sourceHan', label: '思源黑体 / Noto', sample: '中文 Aa 123' },
+  { id: 'lxgw', label: '霞鹜文楷', sample: '中文 Aa 123' },
+  { id: 'mono', label: '等宽字体', sample: '中文 Aa 123' },
 ];
 
 const CONTEXT_WINDOW_OPTIONS: Array<{ id: ContextWindowMode; label: string; hint: string }> = [
-  { id: 'default', label: '鏍囧噯 200K', hint: '鑷姩 compact 闃堝€?160K' },
-  { id: 'large1m', label: '澹版槑 1M', hint: '鑷姩 compact 闃堝€?800K' },
+  { id: 'default', label: '标准 200K', hint: '自动 compact 阈值 160K' },
+  { id: 'large1m', label: '扩展 1M', hint: '自动 compact 阈值 800K' },
 ];
 
 export async function optimizeImageFile(file: File): Promise<string> {
   if (!file.type.startsWith('image/')) {
-    throw new Error('璇烽€夋嫨鍥剧墖鏂囦欢');
+    throw new Error('请选择图片文件');
   }
 
   const url = URL.createObjectURL(file);
@@ -104,7 +104,7 @@ export async function optimizeImageFile(file: File): Promise<string> {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const element = new Image();
       element.onload = () => resolve(element);
-      element.onerror = () => reject(new Error('鍥剧墖璇诲彇澶辫触'));
+      element.onerror = () => reject(new Error('图片读取失败'));
       element.src = url;
     });
 
@@ -115,7 +115,7 @@ export async function optimizeImageFile(file: File): Promise<string> {
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('鏃犳硶鍒涘缓鐢诲竷');
+    if (!ctx) throw new Error('无法创建画布');
     ctx.drawImage(img, 0, 0, width, height);
     return canvas.toDataURL('image/jpeg', 0.88);
   } finally {
@@ -260,7 +260,7 @@ export function GeneralTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-[13px] font-medium text-text-primary mb-3">Avatars & Name</h3>
+        <h3 className="text-[13px] font-medium text-text-primary mb-3">头像与昵称</h3>
         <div className="flex items-start gap-6 flex-wrap">
           <div className="flex flex-col items-center gap-1.5">
             <button
@@ -281,7 +281,7 @@ export function GeneralTab() {
                 onClick={() => setAiAvatarUrl('')}
                 className="text-[11px] text-text-muted hover:text-red-500 transition-smooth"
               >
-                閲嶇疆
+                重置
               </button>
             )}
           </div>
@@ -303,7 +303,7 @@ export function GeneralTab() {
               type="text"
               value={userDisplayName}
               onChange={(e) => setUserDisplayName(e.target.value)}
-              placeholder="User name"
+              placeholder={t('settings.userNamePlaceholder')}
               maxLength={20}
               className="w-28 px-2 py-1 rounded-lg text-[11px] text-center bg-bg-secondary border border-border-subtle text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent/50 transition-smooth"
             />
@@ -312,7 +312,7 @@ export function GeneralTab() {
                 onClick={() => setUserAvatarUrl('')}
                 className="text-[11px] text-text-muted hover:text-red-500 transition-smooth"
               >
-                閲嶇疆
+                重置
               </button>
             )}
           </div>
@@ -335,7 +335,7 @@ export function GeneralTab() {
       )}
 
       <div>
-        <h3 className="text-[13px] font-medium text-text-primary mb-3">Color Theme</h3>
+        <h3 className="text-[13px] font-medium text-text-primary mb-3">主题颜色</h3>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {COLOR_THEMES.map((item) => (
             <button
@@ -355,7 +355,7 @@ export function GeneralTab() {
       </div>
 
       <div>
-        <h3 className="text-[13px] font-medium text-text-primary mb-3">鑳屾櫙椋庢牸</h3>
+        <h3 className="text-[13px] font-medium text-text-primary mb-3">背景风格</h3>
         <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
           {BACKGROUND_THEMES.map((item) => (
             <button
@@ -381,35 +381,35 @@ export function GeneralTab() {
       <div className="rounded-2xl border border-border-subtle bg-bg-secondary/40 p-4">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="min-w-0 flex-1">
-            <h3 className="text-[13px] font-medium text-text-primary">Custom Background</h3>
+            <h3 className="text-[13px] font-medium text-text-primary">自定义背景图</h3>
             <p className="mt-1 text-xs text-text-tertiary leading-relaxed">
-              Uploading applies the image immediately and also stores a local optimized backup.
+              上传后会立即应用背景图，并同时保存一份本地优化备份。
             </p>
             <div className="mt-3 rounded-xl border border-border-subtle bg-bg-card/60 px-3 py-2 text-[11px] leading-5 text-text-tertiary">
-              <div>Supported: JPG / PNG / WebP</div>
-              <div>Recommended ratio: {RECOMMENDED_BACKGROUND_RATIO}</div>
-              <div>Recommended minimum size: {RECOMMENDED_BACKGROUND_RESOLUTION}</div>
-              <div>Other ratios also work, but the UI uses cover mode so edges may be cropped.</div>
+              <div>支持格式：JPG / PNG / WebP</div>
+              <div>推荐比例：{RECOMMENDED_BACKGROUND_RATIO}</div>
+              <div>推荐最小尺寸：{RECOMMENDED_BACKGROUND_RESOLUTION}</div>
+              <div>其他比例也可使用，但界面采用 cover 模式，边缘可能会被裁切。</div>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 onClick={() => backgroundFileInputRef.current?.click()}
                 className="px-3 py-2 rounded-lg text-[13px] font-medium bg-accent text-text-inverse hover:bg-accent-hover transition-smooth"
               >
-                {customBackgroundImageUrl ? 'Replace image' : 'Upload image'}
+                {customBackgroundImageUrl ? '更换图片' : '上传图片'}
               </button>
               <button
                 onClick={() => setCustomBackgroundImageUrl('')}
                 disabled={!customBackgroundImageUrl}
                 className="px-3 py-2 rounded-lg text-[13px] font-medium border border-border-subtle text-text-muted hover:text-text-primary hover:bg-bg-secondary transition-smooth disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Clear background
+                清除背景
               </button>
             </div>
-            {backgroundUploading && <p className="mt-2 text-xs text-text-tertiary">Processing image...</p>}
+            {backgroundUploading && <p className="mt-2 text-xs text-text-tertiary">正在处理图片...</p>}
             <div className="mt-4">
               <div className="flex items-center justify-between gap-3">
-                <label className="text-[12px] font-medium text-text-primary">Surface opacity</label>
+                <label className="text-[12px] font-medium text-text-primary">界面蒙层透明度</label>
                 <span className="text-[11px] text-text-tertiary">{clampedBackgroundSurfaceOpacity}%</span>
               </div>
               <input
@@ -422,15 +422,15 @@ export function GeneralTab() {
                 className="mt-2 w-full accent-accent"
               />
               <p className="mt-1 text-[11px] text-text-tertiary leading-relaxed">
-                Lower values make the chat area and sidebar more transparent, so the background stays more visible.
+                数值越低，聊天区和侧栏越透明，背景图就会显示得更完整。
               </p>
             </div>
             <div className="mt-4 rounded-xl border border-border-subtle bg-bg-card/60 px-3 py-3">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <div className="text-[12px] font-medium text-text-primary">Background Enhance Mode</div>
+                  <div className="text-[12px] font-medium text-text-primary">背景增强模式</div>
                   <p className="mt-1 text-[11px] leading-relaxed text-text-tertiary">
-                    Best for very busy or high-contrast background images. It improves readability while keeping the full image visible.
+                    适合花纹复杂或对比度较高的背景图，在尽量保留完整背景的同时提升文字可读性。
                   </p>
                 </div>
                 <button
@@ -446,7 +446,7 @@ export function GeneralTab() {
                     }`}
                     />
                   </span>
-                  {backgroundEnhanceEnabled ? 'Enabled' : 'Off'}
+                  {backgroundEnhanceEnabled ? '已开启' : '已关闭'}
                 </button>
               </div>
             </div>
@@ -467,7 +467,7 @@ export function GeneralTab() {
             >
               {!customBackgroundImageUrl && (
                 <div className="absolute inset-0 flex items-center justify-center text-xs text-text-tertiary">
-                  No background image set
+                  暂未设置背景图
                 </div>
               )}
               {customBackgroundImageUrl && (
@@ -516,7 +516,7 @@ export function GeneralTab() {
               )}
             </div>
             <p className="mt-2 text-[11px] text-text-tertiary">
-              This preview stays in sync with the current background image and surface opacity.
+              这里的预览会和当前背景图及蒙层透明度保持同步。
             </p>
           </div>
         </div>
@@ -558,7 +558,7 @@ export function GeneralTab() {
                   locale === lang ? 'bg-accent/10 text-accent' : 'text-text-muted hover:bg-bg-secondary'
                 }`}
               >
-                {lang === 'zh' ? '涓枃' : 'EN'}
+                {lang === 'zh' ? '中文' : 'EN'}
               </button>
             ))}
           </div>
@@ -594,7 +594,7 @@ export function GeneralTab() {
           >
             {FONT_FAMILY_OPTIONS.map((option) => (
               <option key={option.id} value={option.id}>
-                {option.label} 路 {option.sample}
+                {option.label} · {option.sample}
               </option>
             ))}
           </select>
@@ -644,13 +644,13 @@ export function GeneralTab() {
             ))}
           </div>
           <div className="mt-2 text-xs text-text-tertiary leading-relaxed">
-            Actual model: <span className="font-mono text-text-muted">{displayProviderModelName(actualModel)}</span>
-            {activeProvider && tierMappings && <span className="ml-2">Mappings: {tierMappings}</span>}
+            当前实际模型：<span className="font-mono text-text-muted">{displayProviderModelName(actualModel)}</span>
+            {activeProvider && tierMappings && <span className="ml-2">映射：{tierMappings}</span>}
           </div>
         </div>
 
         <div>
-          <h3 className="text-[13px] font-medium text-text-primary mb-2">Context Window</h3>
+          <h3 className="text-[13px] font-medium text-text-primary mb-2">上下文窗口</h3>
           <div className="grid grid-cols-2 gap-2">
             {CONTEXT_WINDOW_OPTIONS.map((option) => (
               <button
@@ -668,13 +668,13 @@ export function GeneralTab() {
             ))}
           </div>
           <p className="mt-2 text-xs text-text-tertiary leading-relaxed">
-            Current window: {contextWindow.toLocaleString()} tokens. Auto-compact threshold: {compactThreshold.toLocaleString()} tokens.
-            If your route really supports 1M context, switch to the 1M mode above.
+            当前窗口：{contextWindow.toLocaleString()} tokens。自动 compact 阈值：{compactThreshold.toLocaleString()} tokens。
+            如果你的路由确实支持 1M 上下文，可以切换到上方的 1M 模式。
           </p>
         </div>
 
         <div>
-          <h3 className="text-[13px] font-medium text-text-primary mb-2">Auto-compact Threshold</h3>
+          <h3 className="text-[13px] font-medium text-text-primary mb-2">自动 compact 阈值</h3>
           <div className="flex items-center gap-2 flex-wrap">
             <input
               type="number"
@@ -703,7 +703,8 @@ export function GeneralTab() {
             </div>
           </div>
           <p className="mt-2 text-xs text-text-tertiary leading-relaxed">
-            杩欎釜鍊间細鐩存帴鍐冲畾鑷姩鍙戦€?`/compact` 鐨勬椂鏈猴紝淇敼鍚庝細绔嬪埢浣滅敤鍒板綋鍓嶄細璇濄€?          </p>
+            这个值会直接决定自动触发 `/compact` 的时机，修改后会立刻作用到当前会话。
+          </p>
         </div>
       </div>
     </div>
