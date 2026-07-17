@@ -1,0 +1,61 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "TOKENICODE",
+  "version": "1.0.2",
+  "identifier": "com.tinyzhuang.tokenicode",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "TOKENICODE",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 900,
+        "minHeight": 600,
+        "decorations": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: asset: https: http:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost https: http: wss: ws:; media-src 'self' data: https: http:"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "createUpdaterArtifacts": false,
+    "resources": {
+      "resources/en.lproj": "en.lproj",
+      "resources/zh-Hans.lproj": "zh-Hans.lproj",
+      "resources/bundled-runtime": "bundled-runtime"
+    },
+    "macOS": {
+      "entitlements": "entitlements.plist",
+      "minimumSystemVersion": "10.13"
+    },
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDkwNTRBQkM5QzUwNEQ4NzMKUldSejJBVEZ5YXRVa05oTUkrdXFiUFVBOTBZWTNQaTZQNmlCOHRnL2pLQUxxRXhaWi9wL2poM1YK",
+      "endpoints": [
+        "https://raw.githubusercontent.com/mistydew/tokenicode-deepseek-alpha/main/latest.json"
+      ]
+    }
+  }
+}
