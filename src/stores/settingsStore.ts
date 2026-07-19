@@ -15,6 +15,28 @@ export type SecondaryPanelTab = 'overview' | 'files' | 'preview' | 'skills' | 'p
 export type ModelId = 'claude-opus-4-6' | 'claude-opus-4-6-1m' | 'claude-sonnet-4-6' | 'claude-haiku-4-5-20251001';
 export type SessionMode = 'code' | 'ask' | 'plan' | 'bypass';
 export type FontFamily = 'system' | 'microsoft' | 'sourceHan' | 'lxgw' | 'mono';
+export interface CustomThemeColors {
+  background: string;
+  surface: string;
+  surfaceAlt: string;
+  accent: string;
+  accentStrong: string;
+  accentSoft: string;
+  text: string;
+  textMuted: string;
+  border: string;
+}
+export interface CustomThemeConfig {
+  id: string;
+  name: string;
+  headline: string;
+  tagline: string;
+  projectLabel: string;
+  projectButtonText: string;
+  statusText: string;
+  quoteText: string;
+  colors: CustomThemeColors;
+}
 export interface WorkspaceEntry {
   path: string;
   lastUsed: number;
@@ -47,6 +69,67 @@ function clampAutoCompactThreshold(tokens: number): number {
 function clampBackgroundSurfaceOpacity(value: number): number {
   if (!Number.isFinite(value)) return 82;
   return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function trimThemeText(value: unknown, fallback: string, maxLength: number): string {
+  if (typeof value !== 'string') return fallback;
+  const trimmed = value.trim();
+  return (trimmed || fallback).slice(0, maxLength);
+}
+
+function normalizeThemeColor(value: unknown, fallback: string): string {
+  if (typeof value !== 'string') return fallback;
+  const trimmed = value.trim();
+  if (!trimmed) return fallback;
+  return trimmed.slice(0, 32);
+}
+
+export const DEFAULT_CUSTOM_THEME: CustomThemeConfig = {
+  id: 'custom-tokenicode-theme',
+  name: '我的自定义主题',
+  headline: 'TOKENICODE DREAM SKIN',
+  tagline: '把喜欢的背景、颜色和文字组合成你自己的工作台。',
+  projectLabel: '当前工作区',
+  projectButtonText: '选择项目',
+  statusText: 'CUSTOM THEME ONLINE',
+  quoteText: 'MAKE SOMETHING WONDERFUL',
+  colors: {
+    background: '#F7F4F5',
+    surface: '#FFFFFF',
+    surfaceAlt: '#FFF7F8',
+    accent: '#F07A86',
+    accentStrong: '#C93D4C',
+    accentSoft: '#F3A8AF',
+    text: '#2B2224',
+    textMuted: '#8A7A7D',
+    border: '#E7C7CB',
+  },
+};
+
+function sanitizeCustomTheme(input: unknown): CustomThemeConfig {
+  const source = (input && typeof input === 'object' ? input : {}) as Partial<CustomThemeConfig>;
+  const colors = (source.colors && typeof source.colors === 'object' ? source.colors : {}) as Partial<CustomThemeColors>;
+  return {
+    id: trimThemeText(source.id, DEFAULT_CUSTOM_THEME.id, 48),
+    name: trimThemeText(source.name, DEFAULT_CUSTOM_THEME.name, 32),
+    headline: trimThemeText(source.headline, DEFAULT_CUSTOM_THEME.headline, 60),
+    tagline: trimThemeText(source.tagline, DEFAULT_CUSTOM_THEME.tagline, 120),
+    projectLabel: trimThemeText(source.projectLabel, DEFAULT_CUSTOM_THEME.projectLabel, 32),
+    projectButtonText: trimThemeText(source.projectButtonText, DEFAULT_CUSTOM_THEME.projectButtonText, 24),
+    statusText: trimThemeText(source.statusText, DEFAULT_CUSTOM_THEME.statusText, 40),
+    quoteText: trimThemeText(source.quoteText, DEFAULT_CUSTOM_THEME.quoteText, 48),
+    colors: {
+      background: normalizeThemeColor(colors.background, DEFAULT_CUSTOM_THEME.colors.background),
+      surface: normalizeThemeColor(colors.surface, DEFAULT_CUSTOM_THEME.colors.surface),
+      surfaceAlt: normalizeThemeColor(colors.surfaceAlt, DEFAULT_CUSTOM_THEME.colors.surfaceAlt),
+      accent: normalizeThemeColor(colors.accent, DEFAULT_CUSTOM_THEME.colors.accent),
+      accentStrong: normalizeThemeColor(colors.accentStrong, DEFAULT_CUSTOM_THEME.colors.accentStrong),
+      accentSoft: normalizeThemeColor(colors.accentSoft, DEFAULT_CUSTOM_THEME.colors.accentSoft),
+      text: normalizeThemeColor(colors.text, DEFAULT_CUSTOM_THEME.colors.text),
+      textMuted: normalizeThemeColor(colors.textMuted, DEFAULT_CUSTOM_THEME.colors.textMuted),
+      border: normalizeThemeColor(colors.border, DEFAULT_CUSTOM_THEME.colors.border),
+    },
+  };
 }
 
 export function normalizeWorkspacePath(path: string): string {
@@ -146,6 +229,10 @@ interface SettingsState {
   userAvatarUrl: string;
   /** Custom interface background image (optimized data URL) */
   customBackgroundImageUrl: string;
+  /** Whether the editable custom theme overrides the selected preset background theme */
+  customThemeEnabled: boolean;
+  /** User-editable theme metadata + palette */
+  customTheme: CustomThemeConfig;
   /** Foreground surface opacity when a custom background image is active */
   backgroundSurfaceOpacity: number;
   /** Extra readability mode for busy custom backgrounds */
@@ -193,6 +280,10 @@ interface SettingsState {
   setAiAvatarUrl: (url: string) => void;
   setUserAvatarUrl: (url: string) => void;
   setCustomBackgroundImageUrl: (url: string) => void;
+  setCustomThemeEnabled: (enabled: boolean) => void;
+  updateCustomTheme: (patch: Partial<CustomThemeConfig>) => void;
+  updateCustomThemeColors: (patch: Partial<CustomThemeColors>) => void;
+  resetCustomTheme: () => void;
   setBackgroundSurfaceOpacity: (value: number) => void;
   setBackgroundEnhanceEnabled: (enabled: boolean) => void;
   setUserDisplayName: (name: string) => void;
@@ -244,6 +335,8 @@ export const useSettingsStore = create<SettingsState>()(
       aiAvatarUrl: '',
       userAvatarUrl: '',
       customBackgroundImageUrl: '',
+      customThemeEnabled: false,
+      customTheme: DEFAULT_CUSTOM_THEME,
       backgroundSurfaceOpacity: 82,
       backgroundEnhanceEnabled: false,
       userDisplayName: '',
@@ -403,6 +496,35 @@ export const useSettingsStore = create<SettingsState>()(
       setCustomBackgroundImageUrl: (url) =>
         set(() => ({ customBackgroundImageUrl: url })),
 
+      setCustomThemeEnabled: (customThemeEnabled) =>
+        set(() => ({ customThemeEnabled })),
+
+      updateCustomTheme: (patch) =>
+        set((state) => ({
+          customTheme: sanitizeCustomTheme({
+            ...state.customTheme,
+            ...patch,
+            colors: {
+              ...state.customTheme.colors,
+              ...patch.colors,
+            },
+          }),
+        })),
+
+      updateCustomThemeColors: (patch) =>
+        set((state) => ({
+          customTheme: sanitizeCustomTheme({
+            ...state.customTheme,
+            colors: {
+              ...state.customTheme.colors,
+              ...patch,
+            },
+          }),
+        })),
+
+      resetCustomTheme: () =>
+        set(() => ({ customTheme: DEFAULT_CUSTOM_THEME })),
+
       setBackgroundSurfaceOpacity: (backgroundSurfaceOpacity) =>
         set(() => ({ backgroundSurfaceOpacity: clampBackgroundSurfaceOpacity(backgroundSurfaceOpacity) })),
 
@@ -416,7 +538,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'tokenicode-settings',
-      version: 16,
+      version: 17,
       migrate: (persistedState: unknown, version: number) => {
         const persisted = persistedState as Record<string, unknown>;
         if (version === 0) {
@@ -508,6 +630,10 @@ export const useSettingsStore = create<SettingsState>()(
         if (version < 16) {
           persisted.backgroundEnhanceEnabled = false;
         }
+        if (version < 17) {
+          persisted.customThemeEnabled = false;
+          persisted.customTheme = sanitizeCustomTheme(persisted.customTheme);
+        }
         return persisted;
       },
       partialize: (state) => ({
@@ -535,6 +661,8 @@ export const useSettingsStore = create<SettingsState>()(
         aiAvatarUrl: state.aiAvatarUrl,
         userAvatarUrl: state.userAvatarUrl,
         customBackgroundImageUrl: state.customBackgroundImageUrl,
+        customThemeEnabled: state.customThemeEnabled,
+        customTheme: state.customTheme,
         backgroundSurfaceOpacity: state.backgroundSurfaceOpacity,
         backgroundEnhanceEnabled: state.backgroundEnhanceEnabled,
         userDisplayName: state.userDisplayName,

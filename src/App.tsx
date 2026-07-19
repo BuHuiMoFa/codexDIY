@@ -11,7 +11,7 @@ import { Toast } from './components/shared/Toast';
 import { showToast } from './components/shared/Toast';
 import { useSettingsStore } from './stores/settingsStore';
 import { useProviderStore } from './stores/providerStore';
-import type { ColorTheme, FontFamily, Theme } from './stores/settingsStore';
+import type { ColorTheme, CustomThemeConfig, FontFamily, Theme } from './stores/settingsStore';
 import { useFileStore } from './stores/fileStore';
 import { useChatStore } from './stores/chatStore';
 import { useSessionStore } from './stores/sessionStore';
@@ -38,6 +38,18 @@ const FONT_FAMILY_STACKS: Record<FontFamily, string> = {
   lxgw: '"LXGW WenKai Screen", "LXGW WenKai", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif',
   mono: '"Cascadia Code", "JetBrains Mono", "SF Mono", Consolas, "Microsoft YaHei UI", monospace',
 };
+
+function applyCustomThemeCssVars(root: HTMLElement, customTheme: CustomThemeConfig) {
+  root.style.setProperty('--custom-theme-bg', customTheme.colors.background);
+  root.style.setProperty('--custom-theme-surface', customTheme.colors.surface);
+  root.style.setProperty('--custom-theme-surface-alt', customTheme.colors.surfaceAlt);
+  root.style.setProperty('--custom-theme-accent', customTheme.colors.accent);
+  root.style.setProperty('--custom-theme-accent-strong', customTheme.colors.accentStrong);
+  root.style.setProperty('--custom-theme-accent-soft', customTheme.colors.accentSoft);
+  root.style.setProperty('--custom-theme-text', customTheme.colors.text);
+  root.style.setProperty('--custom-theme-text-muted', customTheme.colors.textMuted);
+  root.style.setProperty('--custom-theme-border', customTheme.colors.border);
+}
 
 /** Render the app icon SVG as base64 PNG for macOS Dock.
  *  Uses the bundled watercolor app icon so dock and window branding match. */
@@ -75,6 +87,8 @@ function App() {
   const theme = useSettingsStore((s) => s.theme);
   const colorTheme = useSettingsStore((s) => s.colorTheme);
   const backgroundTheme = useSettingsStore((s) => s.backgroundTheme);
+  const customThemeEnabled = useSettingsStore((s) => s.customThemeEnabled);
+  const customTheme = useSettingsStore((s) => s.customTheme);
   const fontSize = useSettingsStore((s) => s.fontSize);
   const fontFamily = useSettingsStore((s) => s.fontFamily);
   const monoFontFollowsInterface = useSettingsStore((s) => s.monoFontFollowsInterface);
@@ -257,9 +271,17 @@ function App() {
   // Apply watercolor background skin class to document
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.remove('bg-theme-garden', 'bg-theme-sakura', 'bg-theme-lake', 'bg-theme-dusk', 'bg-theme-ink', 'bg-theme-vscode', 'bg-theme-minimal');
-    root.classList.add(`bg-theme-${backgroundTheme}`);
-  }, [backgroundTheme]);
+    root.classList.remove('bg-theme-garden', 'bg-theme-sakura', 'bg-theme-lake', 'bg-theme-dusk', 'bg-theme-ink', 'bg-theme-vscode', 'bg-theme-minimal', 'bg-theme-custom');
+    if (customThemeEnabled) {
+      root.classList.add('bg-theme-custom');
+    } else {
+      root.classList.add(`bg-theme-${backgroundTheme}`);
+    }
+  }, [backgroundTheme, customThemeEnabled]);
+
+  useEffect(() => {
+    applyCustomThemeCssVars(document.documentElement, customTheme);
+  }, [customTheme]);
 
   // Update macOS dock icon when color theme changes
   useEffect(() => {

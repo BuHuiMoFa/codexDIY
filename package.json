@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "powershell -ExecutionPolicy Bypass -File scripts/build-app.ps1",
     "preview": "vite preview",
     "tauri": "tauri",
     "stage:bundled-runtime": "powershell -ExecutionPolicy Bypass -File scripts/stage-bundled-runtime.ps1",

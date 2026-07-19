@@ -1,9 +1,12 @@
 ﻿import { useCallback, useRef, useState } from 'react';
 import {
   useSettingsStore,
+  DEFAULT_CUSTOM_THEME,
   MODEL_OPTIONS,
   type ColorTheme,
   type BackgroundTheme,
+  type CustomThemeConfig,
+  type CustomThemeColors,
   type FontFamily,
   type ContextWindowMode,
   getAutoCompactThreshold,
@@ -94,6 +97,29 @@ const CONTEXT_WINDOW_OPTIONS: Array<{ id: ContextWindowMode; label: string; hint
   { id: 'large1m', label: '扩展 1M', hint: '自动 compact 阈值 800K' },
 ];
 
+const CUSTOM_THEME_TEXT_FIELDS: Array<{ key: keyof Omit<CustomThemeConfig, 'colors'>; label: string; placeholder?: string }> = [
+  { key: 'id', label: '主题 ID', placeholder: 'custom-tokenicode-theme' },
+  { key: 'name', label: '主题名称', placeholder: '我的主题' },
+  { key: 'headline', label: '品牌标题', placeholder: 'TOKENICODE DREAM SKIN' },
+  { key: 'tagline', label: '主题标语', placeholder: '把喜欢的背景和颜色变成工作台。' },
+  { key: 'projectLabel', label: '项目标题', placeholder: '当前工作区' },
+  { key: 'projectButtonText', label: '按钮文字', placeholder: '选择项目' },
+  { key: 'statusText', label: '状态文字', placeholder: 'CUSTOM THEME ONLINE' },
+  { key: 'quoteText', label: '引用文字', placeholder: 'MAKE SOMETHING WONDERFUL' },
+];
+
+const CUSTOM_THEME_COLOR_FIELDS: Array<{ key: keyof CustomThemeColors; label: string }> = [
+  { key: 'background', label: '背景色' },
+  { key: 'surface', label: '面板色' },
+  { key: 'surfaceAlt', label: '次级面板色' },
+  { key: 'accent', label: '强调色' },
+  { key: 'accentStrong', label: '高亮色' },
+  { key: 'accentSoft', label: '辅助色' },
+  { key: 'text', label: '文字色' },
+  { key: 'textMuted', label: '弱化文字色' },
+  { key: 'border', label: '边线色' },
+];
+
 export async function optimizeImageFile(file: File): Promise<string> {
   if (!file.type.startsWith('image/')) {
     throw new Error('请选择图片文件');
@@ -146,6 +172,60 @@ function ThemePreview({ color }: { color: string }) {
   );
 }
 
+function ThemeToggle({
+  enabled,
+  onToggle,
+}: {
+  enabled: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      className="inline-flex items-center gap-2 rounded-full border border-border-subtle bg-bg-card/70 px-3 py-1.5 text-[12px] text-text-secondary transition-smooth hover:text-text-primary"
+    >
+      <span className={`relative h-5 w-9 rounded-full transition-smooth ${
+        enabled ? 'bg-accent/85' : 'bg-bg-tertiary'
+      }`}
+      >
+        <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+          enabled ? 'translate-x-[18px]' : 'translate-x-0.5'
+        }`}
+        />
+      </span>
+      <span>{enabled ? '已启用自定义主题' : '未启用自定义主题'}</span>
+    </button>
+  );
+}
+
+function ThemeColorControl({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="rounded-xl border border-border-subtle bg-bg-card/60 p-3">
+      <div className="mb-2 text-[12px] font-medium text-text-primary">{label}</div>
+      <div className="flex items-center gap-3">
+        <input
+          type="color"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-10 w-10 cursor-pointer rounded-lg border border-border-subtle bg-transparent p-0.5"
+        />
+        <div className="min-w-0">
+          <div className="text-[13px] font-medium text-text-primary">{value.toUpperCase()}</div>
+          <div className="text-[11px] text-text-tertiary">点击色块快速调整</div>
+        </div>
+      </div>
+    </label>
+  );
+}
+
 export function GeneralTab() {
   const t = useT();
   const activeProvider = useProviderStore((s) => {
@@ -166,6 +246,8 @@ export function GeneralTab() {
   const aiAvatarUrl = useSettingsStore((s) => s.aiAvatarUrl);
   const userAvatarUrl = useSettingsStore((s) => s.userAvatarUrl);
   const customBackgroundImageUrl = useSettingsStore((s) => s.customBackgroundImageUrl);
+  const customThemeEnabled = useSettingsStore((s) => s.customThemeEnabled);
+  const customTheme = useSettingsStore((s) => s.customTheme);
   const backgroundSurfaceOpacity = useSettingsStore((s) => s.backgroundSurfaceOpacity);
   const backgroundEnhanceEnabled = useSettingsStore((s) => s.backgroundEnhanceEnabled);
   const userDisplayName = useSettingsStore((s) => s.userDisplayName);
@@ -183,6 +265,10 @@ export function GeneralTab() {
   const setAiAvatarUrl = useSettingsStore((s) => s.setAiAvatarUrl);
   const setUserAvatarUrl = useSettingsStore((s) => s.setUserAvatarUrl);
   const setCustomBackgroundImageUrl = useSettingsStore((s) => s.setCustomBackgroundImageUrl);
+  const setCustomThemeEnabled = useSettingsStore((s) => s.setCustomThemeEnabled);
+  const updateCustomTheme = useSettingsStore((s) => s.updateCustomTheme);
+  const updateCustomThemeColors = useSettingsStore((s) => s.updateCustomThemeColors);
+  const resetCustomTheme = useSettingsStore((s) => s.resetCustomTheme);
   const setBackgroundSurfaceOpacity = useSettingsStore((s) => s.setBackgroundSurfaceOpacity);
   const setBackgroundEnhanceEnabled = useSettingsStore((s) => s.setBackgroundEnhanceEnabled);
   const setUserDisplayName = useSettingsStore((s) => s.setUserDisplayName);
@@ -214,6 +300,15 @@ export function GeneralTab() {
     .filter((mapping) => ['opus', 'sonnet', 'haiku'].includes(mapping.tier) && mapping.providerModel)
     .map((mapping) => `${mapping.tier}=${displayProviderModelName(mapping.providerModel)}`)
     .join(' / ');
+  const themeCoverStyle = customBackgroundImageUrl
+    ? {
+        backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.06), rgba(0,0,0,0.28)), url("${customBackgroundImageUrl}")`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }
+    : {
+        background: `linear-gradient(135deg, ${customTheme.colors.background} 0%, ${customTheme.colors.accentSoft} 100%)`,
+      };
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>, target: 'ai' | 'user') => {
     const file = e.target.files?.[0];
@@ -243,6 +338,7 @@ export function GeneralTab() {
     try {
       const dataUrl = await optimizeBackgroundImageFile(file);
       applyBackgroundDataUrl(dataUrl);
+      setCustomThemeEnabled(true);
 
       try {
         const bytes = Array.from(new Uint8Array(await (await fetch(dataUrl)).arrayBuffer()));
@@ -255,7 +351,7 @@ export function GeneralTab() {
     } finally {
       setBackgroundUploading(false);
     }
-  }, [applyBackgroundDataUrl]);
+  }, [applyBackgroundDataUrl, setCustomThemeEnabled]);
 
   return (
     <div className="space-y-6">
@@ -379,35 +475,125 @@ export function GeneralTab() {
       </div>
 
       <div className="rounded-2xl border border-border-subtle bg-bg-secondary/40 p-4">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="min-w-0 flex-1">
-            <h3 className="text-[13px] font-medium text-text-primary">自定义背景图</h3>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <h3 className="text-[13px] font-medium text-text-primary">自定义主题</h3>
             <p className="mt-1 text-xs text-text-tertiary leading-relaxed">
-              上传后会立即应用背景图，并同时保存一份本地优化备份。
+              把背景图、文案、颜色和透明度组合成一套主题。启用后会覆盖上面的预设背景风格。
             </p>
-            <div className="mt-3 rounded-xl border border-border-subtle bg-bg-card/60 px-3 py-2 text-[11px] leading-5 text-text-tertiary">
+          </div>
+          <ThemeToggle
+            enabled={customThemeEnabled}
+            onToggle={() => setCustomThemeEnabled(!customThemeEnabled)}
+          />
+        </div>
+
+        <div className="mt-4 grid gap-5 xl:grid-cols-[232px,minmax(0,1fr)]">
+          <div className="space-y-4">
+            <div
+              className="relative overflow-hidden rounded-[22px] border border-border-subtle shadow-sm"
+              style={themeCoverStyle}
+            >
+              <div className="aspect-[4/3.25] p-3.5 text-white">
+                <div className="flex h-full flex-col justify-between">
+                  <div>
+                    <div className="text-[11px] uppercase tracking-[0.24em] text-white/85">
+                      {customTheme.statusText}
+                    </div>
+                    <div className="mt-2.5 text-[1.45rem] font-semibold leading-tight">
+                      {customTheme.headline}
+                    </div>
+                    <div className="mt-1.5 text-[11px] leading-4.5 text-white/88">
+                      {customTheme.tagline}
+                    </div>
+                  </div>
+
+                  <div className="rounded-[18px] bg-white/92 p-2.5 text-left shadow-sm backdrop-blur">
+                    <div className="text-[14px] font-semibold" style={{ color: customTheme.colors.text }}>
+                      {customTheme.name}
+                    </div>
+                    <div className="mt-0.5 text-[11px]" style={{ color: customTheme.colors.textMuted }}>
+                      {customTheme.projectLabel}
+                    </div>
+                    <button
+                      type="button"
+                      className="mt-2 inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium text-white"
+                      style={{ background: `linear-gradient(180deg, ${customTheme.colors.accent}, ${customTheme.colors.accentStrong})` }}
+                    >
+                      {customTheme.projectButtonText}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-border-subtle bg-bg-card/60 px-3 py-2 text-[11px] leading-5 text-text-tertiary">
               <div>支持格式：JPG / PNG / WebP</div>
               <div>推荐比例：{RECOMMENDED_BACKGROUND_RATIO}</div>
               <div>推荐最小尺寸：{RECOMMENDED_BACKGROUND_RESOLUTION}</div>
-              <div>其他比例也可使用，但界面采用 cover 模式，边缘可能会被裁切。</div>
+              <div>如果不用图片，也可以只用颜色做主题。</div>
             </div>
-            <div className="mt-3 flex flex-wrap gap-2">
+
+            <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => backgroundFileInputRef.current?.click()}
                 className="px-3 py-2 rounded-lg text-[13px] font-medium bg-accent text-text-inverse hover:bg-accent-hover transition-smooth"
               >
-                {customBackgroundImageUrl ? '更换图片' : '上传图片'}
+                {customBackgroundImageUrl ? '更换主题图片' : '上传主题图片'}
               </button>
               <button
                 onClick={() => setCustomBackgroundImageUrl('')}
                 disabled={!customBackgroundImageUrl}
                 className="px-3 py-2 rounded-lg text-[13px] font-medium border border-border-subtle text-text-muted hover:text-text-primary hover:bg-bg-secondary transition-smooth disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                清除背景
+                清除图片
+              </button>
+              <button
+                onClick={() => {
+                  resetCustomTheme();
+                  setCustomThemeEnabled(false);
+                }}
+                className="px-3 py-2 rounded-lg text-[13px] font-medium border border-border-subtle text-text-muted hover:text-text-primary hover:bg-bg-secondary transition-smooth"
+              >
+                恢复默认主题
               </button>
             </div>
-            {backgroundUploading && <p className="mt-2 text-xs text-text-tertiary">正在处理图片...</p>}
-            <div className="mt-4">
+
+            {backgroundUploading && <p className="text-xs text-text-tertiary">正在处理图片...</p>}
+            {backgroundUploadError && <p className="text-xs text-red-500">{backgroundUploadError}</p>}
+          </div>
+
+          <div className="space-y-4 min-w-0">
+            <div className="grid gap-3 md:grid-cols-2">
+              {CUSTOM_THEME_TEXT_FIELDS.map((field) => (
+                <label
+                  key={field.key}
+                  className="rounded-xl border border-border-subtle bg-bg-card/60 p-3"
+                >
+                  <div className="mb-2 text-[12px] font-medium text-text-primary">{field.label}</div>
+                  <input
+                    type="text"
+                    value={customTheme[field.key]}
+                    placeholder={field.placeholder}
+                    onChange={(e) => updateCustomTheme({ [field.key]: e.target.value } as Partial<CustomThemeConfig>)}
+                    className="w-full rounded-lg border border-border-subtle bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none transition-smooth focus:border-accent/60"
+                  />
+                </label>
+              ))}
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {CUSTOM_THEME_COLOR_FIELDS.map((field) => (
+                <ThemeColorControl
+                  key={field.key}
+                  label={field.label}
+                  value={customTheme.colors[field.key]}
+                  onChange={(value) => updateCustomThemeColors({ [field.key]: value } as Partial<CustomThemeColors>)}
+                />
+              ))}
+            </div>
+
+            <div className="rounded-xl border border-border-subtle bg-bg-card/60 p-3">
               <div className="flex items-center justify-between gap-3">
                 <label className="text-[12px] font-medium text-text-primary">界面蒙层透明度</label>
                 <span className="text-[11px] text-text-tertiary">{clampedBackgroundSurfaceOpacity}%</span>
@@ -425,7 +611,8 @@ export function GeneralTab() {
                 数值越低，聊天区和侧栏越透明，背景图就会显示得更完整。
               </p>
             </div>
-            <div className="mt-4 rounded-xl border border-border-subtle bg-bg-card/60 px-3 py-3">
+
+            <div className="rounded-xl border border-border-subtle bg-bg-card/60 px-3 py-3">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <div className="text-[12px] font-medium text-text-primary">背景增强模式</div>
@@ -450,76 +637,107 @@ export function GeneralTab() {
                 </button>
               </div>
             </div>
-            {backgroundUploadError && <p className="mt-2 text-xs text-red-500">{backgroundUploadError}</p>}
-          </div>
 
-          <div className="w-[240px] max-w-full flex-shrink-0">
-            <div
-              className="relative aspect-[16/10] overflow-hidden rounded-xl border border-border-subtle bg-bg-primary"
-              style={customBackgroundImageUrl
-                ? {
-                    backgroundImage: `url("${customBackgroundImageUrl}")`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundRepeat: 'no-repeat',
-                  }
-                : undefined}
-            >
-              {!customBackgroundImageUrl && (
-                <div className="absolute inset-0 flex items-center justify-center text-xs text-text-tertiary">
-                  暂未设置背景图
+            <div className="rounded-xl border border-border-subtle bg-bg-card/60 p-3">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-[12px] font-medium text-text-primary">主题效果预览</div>
+                  <div className="mt-1 text-[11px] text-text-tertiary">这里会同步显示当前主题图片、颜色和透明度。</div>
                 </div>
-              )}
-              {customBackgroundImageUrl && (
-                <>
-                  <div
-                    className="absolute inset-0"
-                    style={backgroundEnhanceEnabled
-                      ? {
-                          background: 'linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08)), radial-gradient(circle at 20% 16%, rgba(255,255,255,0.20), transparent 34%), radial-gradient(circle at 84% 12%, rgba(255,255,255,0.12), transparent 30%)',
-                        }
-                      : { backgroundColor: `rgba(0, 0, 0, ${0.02 + (clampedBackgroundSurfaceOpacity / 100) * 0.06})` }}
-                  />
-                  <div
-                    className="absolute left-3 top-3 bottom-3 w-[28%] rounded-lg border border-white/15 shadow-sm backdrop-blur-xl"
-                    style={{
-                      backgroundColor: `color-mix(in srgb, var(--color-bg-sidebar) ${previewSidebarOpacity}%, transparent)`,
-                      boxShadow: backgroundEnhanceEnabled ? '0 12px 30px rgba(15, 23, 42, 0.14)' : undefined,
-                    }}
-                  >
-                    <div className="space-y-2 p-2.5">
-                      <div className="h-2.5 rounded-full bg-white/40" />
-                      <div className="h-2 rounded-full bg-white/25" />
-                      <div className="h-2 rounded-full bg-white/20" />
+                <button
+                  onClick={() => setCustomThemeEnabled(true)}
+                  className="px-3 py-1.5 rounded-lg text-[12px] font-medium bg-accent text-text-inverse hover:bg-accent-hover transition-smooth"
+                >
+                  应用这套主题
+                </button>
+              </div>
+
+              <div
+                className="relative aspect-[16/10] overflow-hidden rounded-xl border"
+                style={{
+                  borderColor: customTheme.colors.border,
+                  ...(customBackgroundImageUrl
+                    ? {
+                        backgroundImage: `url("${customBackgroundImageUrl}")`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        backgroundRepeat: 'no-repeat',
+                      }
+                    : {
+                        background: `linear-gradient(135deg, ${customTheme.colors.background} 0%, ${customTheme.colors.accentSoft} 100%)`,
+                      }),
+                }}
+              >
+                <div
+                  className="absolute inset-0"
+                  style={backgroundEnhanceEnabled
+                    ? {
+                        background: 'linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08)), radial-gradient(circle at 20% 16%, rgba(255,255,255,0.20), transparent 34%), radial-gradient(circle at 84% 12%, rgba(255,255,255,0.12), transparent 30%)',
+                      }
+                    : { backgroundColor: `rgba(255, 255, 255, ${(100 - clampedBackgroundSurfaceOpacity) / 100 * 0.05})` }}
+                />
+                <div
+                  className="absolute left-3 top-3 bottom-3 w-[28%] rounded-lg border shadow-sm backdrop-blur-xl"
+                  style={{
+                    borderColor: `${customTheme.colors.border}AA`,
+                    backgroundColor: `color-mix(in srgb, ${customTheme.colors.surfaceAlt} ${previewSidebarOpacity}%, transparent)`,
+                    boxShadow: backgroundEnhanceEnabled ? '0 12px 30px rgba(15, 23, 42, 0.14)' : undefined,
+                  }}
+                >
+                  <div className="space-y-2 p-2.5">
+                    <div className="h-2.5 rounded-full" style={{ background: `${customTheme.colors.text}22` }} />
+                    <div className="h-2 rounded-full" style={{ background: `${customTheme.colors.accent}30` }} />
+                    <div className="h-2 rounded-full" style={{ background: `${customTheme.colors.textMuted}28` }} />
+                  </div>
+                </div>
+                <div
+                  className="absolute inset-y-3 right-3 left-[36%] rounded-lg border shadow-sm backdrop-blur-xl"
+                  style={{
+                    borderColor: `${customTheme.colors.border}AA`,
+                    backgroundColor: `color-mix(in srgb, ${customTheme.colors.surface} ${previewChatOpacity}%, transparent)`,
+                    boxShadow: backgroundEnhanceEnabled ? '0 12px 30px rgba(15, 23, 42, 0.14)' : undefined,
+                  }}
+                >
+                  <div className="flex h-full flex-col justify-between p-3">
+                    <div className="space-y-2">
+                      <div className="h-2.5 w-[62%] rounded-full" style={{ background: `${customTheme.colors.text}22` }} />
+                      <div
+                        className="ml-auto h-9 w-[56%] rounded-2xl"
+                        style={{ background: `linear-gradient(180deg, ${customTheme.colors.accent}, ${customTheme.colors.accentStrong})` }}
+                      />
+                      <div className="h-8 w-[72%] rounded-2xl" style={{ background: `${customTheme.colors.surfaceAlt}CC` }} />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 flex-1 rounded-full" style={{ background: `${customTheme.colors.surfaceAlt}CC` }} />
+                      <div className="h-8 w-8 rounded-full" style={{ background: customTheme.colors.accentSoft }} />
                     </div>
                   </div>
-                  <div
-                    className="absolute inset-y-3 right-3 left-[36%] rounded-lg border border-white/12 shadow-sm backdrop-blur-xl"
-                    style={{
-                      backgroundColor: `color-mix(in srgb, var(--color-bg-chat) ${previewChatOpacity}%, transparent)`,
-                      boxShadow: backgroundEnhanceEnabled ? '0 12px 30px rgba(15, 23, 42, 0.14)' : undefined,
-                    }}
-                  >
-                    <div className="flex h-full flex-col justify-between p-3">
-                      <div className="space-y-2">
-                        <div className="h-2.5 w-[62%] rounded-full bg-white/40" />
-                        <div className="ml-auto h-9 w-[56%] rounded-2xl bg-white/28" />
-                        <div className="h-8 w-[72%] rounded-2xl bg-white/22" />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="h-8 flex-1 rounded-full bg-white/20" />
-                        <div className="h-8 w-8 rounded-full bg-white/35" />
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
+                </div>
+              </div>
             </div>
-            <p className="mt-2 text-[11px] text-text-tertiary">
-              这里的预览会和当前背景图及蒙层透明度保持同步。
-            </p>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => {
+                  setCustomThemeEnabled(true);
+                  if (!customTheme.id.trim()) {
+                    updateCustomTheme({ id: DEFAULT_CUSTOM_THEME.id });
+                  }
+                }}
+                className="px-3 py-2 rounded-lg text-[13px] font-medium bg-accent text-text-inverse hover:bg-accent-hover transition-smooth"
+              >
+                保存并启用自定义主题
+              </button>
+              <button
+                onClick={() => resetCustomTheme()}
+                className="px-3 py-2 rounded-lg text-[13px] font-medium border border-border-subtle text-text-muted hover:text-text-primary hover:bg-bg-secondary transition-smooth"
+              >
+                仅重置主题字段
+              </button>
+            </div>
           </div>
         </div>
+
         <input
           ref={backgroundFileInputRef}
           type="file"

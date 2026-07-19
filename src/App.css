@@ -1047,6 +1047,69 @@ input, textarea, [contenteditable="true"],
   --color-icon-slash: #FFFFFF;
 }
 
+.bg-theme-custom {
+  --color-bg-primary: var(--custom-theme-bg);
+  --color-bg-secondary: color-mix(in srgb, var(--custom-theme-surface-alt) 78%, white 22%);
+  --color-bg-tertiary: color-mix(in srgb, var(--custom-theme-surface-alt) 58%, var(--custom-theme-border) 42%);
+  --color-bg-chat: color-mix(in srgb, var(--custom-theme-surface) 92%, white 8%);
+  --color-bg-sidebar: color-mix(in srgb, var(--custom-theme-surface-alt) 86%, white 14%);
+  --color-bg-input: color-mix(in srgb, var(--custom-theme-surface) 96%, white 4%);
+  --color-bg-user-msg: var(--custom-theme-accent-strong);
+  --color-bg-assistant-msg: color-mix(in srgb, var(--custom-theme-surface) 92%, white 8%);
+  --color-bg-tool: color-mix(in srgb, var(--custom-theme-surface-alt) 80%, white 20%);
+  --color-bg-thinking: color-mix(in srgb, var(--custom-theme-surface-alt) 88%, var(--custom-theme-bg) 12%);
+  --color-bg-card: color-mix(in srgb, var(--custom-theme-surface) 94%, white 6%);
+  --color-bg-nav-active: color-mix(in srgb, var(--custom-theme-accent-soft) 32%, transparent);
+  --color-text-primary: var(--custom-theme-text);
+  --color-text-secondary: color-mix(in srgb, var(--custom-theme-text) 76%, var(--custom-theme-accent) 24%);
+  --color-text-tertiary: color-mix(in srgb, var(--custom-theme-text-muted) 82%, white 18%);
+  --color-text-inverse: #FFF8F5;
+  --color-text-muted: var(--custom-theme-text-muted);
+  --color-border: color-mix(in srgb, var(--custom-theme-border) 84%, var(--custom-theme-accent-soft) 16%);
+  --color-border-subtle: color-mix(in srgb, var(--custom-theme-border) 64%, white 36%);
+  --color-border-focus: var(--custom-theme-accent);
+  --color-accent: var(--custom-theme-accent);
+  --color-accent-light: var(--custom-theme-accent-soft);
+  --color-accent-hover: var(--custom-theme-accent-strong);
+  --color-accent-glow: color-mix(in srgb, var(--custom-theme-accent) 22%, transparent);
+  --color-success: #6F9B66;
+  --color-error: #D65661;
+  --color-warning: #D88E4D;
+  --color-gradient-start: var(--custom-theme-accent-soft);
+  --color-gradient-mid: var(--custom-theme-accent);
+  --color-gradient-end: var(--custom-theme-accent-strong);
+  --skin-body-background:
+    radial-gradient(circle at 14% 14%, color-mix(in srgb, var(--custom-theme-accent-soft) 20%, transparent), transparent 28%),
+    radial-gradient(circle at 88% 12%, color-mix(in srgb, var(--custom-theme-accent) 14%, transparent), transparent 24%),
+    linear-gradient(180deg, color-mix(in srgb, var(--custom-theme-bg) 92%, white 8%) 0%, var(--custom-theme-bg) 100%);
+  --skin-app-background:
+    radial-gradient(circle at 12% 100%, color-mix(in srgb, var(--custom-theme-accent-soft) 18%, transparent), transparent 26%),
+    radial-gradient(circle at 100% 12%, color-mix(in srgb, var(--custom-theme-accent) 10%, transparent), transparent 24%),
+    linear-gradient(180deg, color-mix(in srgb, var(--custom-theme-surface) 88%, white 12%) 0%, var(--custom-theme-bg) 100%);
+  --skin-border-strong: color-mix(in srgb, var(--custom-theme-border) 88%, var(--custom-theme-accent-soft) 12%);
+  --skin-border-soft: color-mix(in srgb, var(--custom-theme-border) 68%, white 32%);
+  --skin-dashed-border: color-mix(in srgb, var(--custom-theme-accent-soft) 34%, transparent);
+  --skin-decor: "";
+  --skin-decor-color: color-mix(in srgb, var(--custom-theme-accent-soft) 44%, transparent);
+  --skin-grid-line-a: color-mix(in srgb, var(--custom-theme-border) 16%, transparent);
+  --skin-grid-line-b: color-mix(in srgb, var(--custom-theme-border) 10%, transparent);
+  --skin-accent-gradient: linear-gradient(180deg, var(--custom-theme-accent) 0%, var(--custom-theme-accent-strong) 100%);
+  --skin-accent-border: color-mix(in srgb, var(--custom-theme-accent-strong) 42%, transparent);
+  --skin-hover-bg: color-mix(in srgb, var(--custom-theme-accent-soft) 20%, white 80%);
+  --skin-table-head: color-mix(in srgb, var(--custom-theme-accent-soft) 16%, white 84%);
+  --skin-resize-bg: color-mix(in srgb, var(--custom-theme-surface-alt) 80%, white 20%);
+  --skin-resize-line: color-mix(in srgb, var(--custom-theme-accent) 32%, transparent);
+  --skin-scrollbar: color-mix(in srgb, var(--custom-theme-accent) 28%, transparent);
+  --skin-accent-text: var(--custom-theme-accent-strong);
+  --skin-warning-text: #C77E3E;
+  --skin-success-text: #6F9B66;
+  --shadow-sm: 0 1px 2px rgba(25, 23, 24, 0.05);
+  --shadow-md: 0 12px 30px rgba(25, 23, 24, 0.08);
+  --shadow-lg: 0 18px 44px rgba(25, 23, 24, 0.10);
+  --shadow-glow: 0 0 20px color-mix(in srgb, var(--custom-theme-accent) 12%, transparent);
+  --color-icon-slash: #FFFFFF;
+}
+
 body {
   font-family: var(--tokenicode-font-family, "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI", Arial, sans-serif);
   background: var(--skin-body-background);
