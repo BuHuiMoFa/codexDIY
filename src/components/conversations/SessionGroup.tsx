@@ -21,6 +21,7 @@ interface SessionGroupProps {
   projectKey: string;
   projectLabel: string;
   projectPath: string;
+  projectSubtitle?: string;
   sessions: SessionListItem[];
   isExpanded: boolean;
   selectedId: string | null;
@@ -49,6 +50,7 @@ export function SessionGroup({
   projectKey,
   projectLabel: label,
   projectPath,
+  projectSubtitle,
   sessions,
   isExpanded,
   selectedId,
@@ -102,10 +104,10 @@ export function SessionGroup({
       { key: 'earlier', label: t('conv.older') },
     ];
 
-    for (const { key, label } of categoryOrder) {
+    for (const { key, label: categoryLabel } of categoryOrder) {
       const items = categoryMap.get(key);
       if (items && items.length > 0) {
-        groups.push({ category: key, label, items });
+        groups.push({ category: key, label: categoryLabel, items });
       }
     }
 
@@ -170,17 +172,17 @@ export function SessionGroup({
               </span>
               {isActiveWorkspace && (
                 <span className="flex-shrink-0 rounded-full bg-accent/15 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-accent">
-                  当前
+                  {'\u5f53\u524d'}
                 </span>
               )}
               {!isActiveWorkspace && isSavedWorkspace && (
                 <span className="flex-shrink-0 rounded-full bg-bg-secondary/80 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-text-tertiary">
-                  工作区
+                  {'\u5de5\u4f5c\u533a'}
                 </span>
               )}
             </div>
             <div className="mt-0.5 truncate text-[11px] text-text-tertiary">
-              {sessions.length > 0 ? `${sessions.length} ${t('conv.sessions')}` : '暂无会话'}
+              {sessions.length > 0 ? `${sessions.length} ${t('conv.sessions')}` : '\u6682\u65e0\u4f1a\u8bdd'}
             </div>
           </div>
 
@@ -192,9 +194,9 @@ export function SessionGroup({
                   onActivateWorkspace(projectPath);
                 }}
                 className="rounded-lg px-2 py-1 text-[10px] font-medium text-text-tertiary transition-smooth hover:bg-bg-secondary hover:text-text-primary"
-                title="切换工作区"
+                title={'\u5207\u6362\u5de5\u4f5c\u533a'}
               >
-                切换
+                {'\u5207\u6362'}
               </button>
             )}
             <button
@@ -223,7 +225,7 @@ export function SessionGroup({
 
       {isExpanded && (
         <div className="px-4 pb-1 pt-1">
-          <span className="block truncate text-[11px] text-text-tertiary">{projectPath}</span>
+          <span className="block truncate text-[11px] text-text-tertiary">{projectSubtitle || projectPath}</span>
         </div>
       )}
 
@@ -231,7 +233,7 @@ export function SessionGroup({
         <div className="mt-1">
           {sessions.length === 0 && (
             <div className="mx-2 rounded-xl bg-bg-secondary/35 px-3 py-3 text-[11px] text-text-tertiary">
-              这个工作区暂时还没有历史会话。
+              {'\u8fd9\u4e2a\u5de5\u4f5c\u533a\u6682\u65f6\u8fd8\u6ca1\u6709\u5386\u53f2\u4f1a\u8bdd\u3002'}
             </div>
           )}
 

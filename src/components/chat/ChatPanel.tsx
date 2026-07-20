@@ -29,6 +29,11 @@ import { displayDeepSeekModelName } from '../../lib/deepseek-models';
 import { parseTurns, shortFilePath, relativeTime, type Turn } from '../../lib/turns';
 import { GitActionMenu } from './GitActionMenu';
 import { useRewind } from '../../hooks/useRewind';
+import {
+  getDirectChatCta,
+  getDirectChatHint,
+  getSelectWorkspaceCta,
+} from '../../lib/direct-chat';
 
 const COMPACT_MESSAGE_TYPES = ['tool_use', 'tool_result', 'thinking', 'todo', 'plan', 'plan_review'] as const;
 
@@ -1954,7 +1959,7 @@ export function ChatPanel() {
           </div>
         </div>
       )}
-      {workingDirectory && !directoryMissing && <InputBar />}
+      {!directoryMissing && <InputBar />}
       </div>{/* end main chat area */}
 
       {/* Right-side plan panel (resizable) */}
@@ -2062,6 +2067,7 @@ async function startDraftSession(folderPath: string) {
       snapshotThinking: thinkingSetting,
       snapshotContextWindowMode: contextWindowMode,
       snapshotProviderId: providerId,
+      snapshotWorkingDirectory: folderPath,
       spawnedModel: resolvedModel,
     });
 
@@ -2081,6 +2087,7 @@ async function startDraftSession(folderPath: string) {
 function WelcomeScreen() {
   const t = useT();
   const setupCompleted = useSettingsStore((s) => s.setupCompleted);
+  const locale = useSettingsStore((s) => s.locale);
   const recentProjects = useFileStore((s) => s.recentProjects);
   const fetchProjects = useFileStore((s) => s.fetchRecentProjects);
 
@@ -2097,6 +2104,10 @@ function WelcomeScreen() {
     }
   }, [t]);
 
+  const handleDirectChat = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('tokenicode:focus-input'));
+  }, []);
+
   // Show SetupWizard if setup has not been completed
   if (!setupCompleted) {
     return <SetupWizard />;
@@ -2110,23 +2121,32 @@ function WelcomeScreen() {
         {t('chat.welcome')}
       </h2>
       <p className="text-sm text-text-muted max-w-sm leading-relaxed mb-6">
-        {t('welcome.subtitle')}
+        {getDirectChatHint(locale)}
       </p>
 
-      {/* Primary action: new chat with folder picker */}
-      <button
-        onClick={handlePickFolder}
-        className="px-6 py-3 rounded-[20px] text-sm font-medium
-          bg-accent hover:bg-accent-hover text-text-inverse
-          hover:shadow-glow transition-smooth
-          flex items-center gap-2 mb-8"
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
-          stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M2 4h4l2 2h6v7H2V4z" />
-        </svg>
-        {t('welcome.newChat')}
-      </button>
+      <div className="mb-8 flex flex-wrap items-center justify-center gap-3">
+        <button
+          onClick={handleDirectChat}
+          className="px-6 py-3 rounded-[20px] text-sm font-medium
+            bg-accent hover:bg-accent-hover text-text-inverse
+            hover:shadow-glow transition-smooth"
+        >
+          {getDirectChatCta(locale)}
+        </button>
+        <button
+          onClick={handlePickFolder}
+          className="px-5 py-3 rounded-[20px] text-sm font-medium
+            border border-border-subtle bg-bg-card/70 text-text-primary
+            hover:border-accent hover:text-accent transition-smooth
+            flex items-center gap-2"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+            stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2 4h4l2 2h6v7H2V4z" />
+          </svg>
+          {getSelectWorkspaceCta(locale)}
+        </button>
+      </div>
 
       {/* Recent projects */}
       {recentProjects.length > 0 && (

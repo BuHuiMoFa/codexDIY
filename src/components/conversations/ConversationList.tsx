@@ -14,6 +14,12 @@ import { SessionItem } from './SessionItem';
 import { SessionContextMenu, ProjectContextMenu } from './SessionContextMenu';
 import { ConfirmDialog } from '../shared/ConfirmDialog';
 import { showToast } from '../shared/Toast';
+import {
+  DIRECT_CHAT_GROUP_KEY,
+  getDirectChatHint,
+  getDirectChatLabel,
+  isDirectChatWorkspacePath,
+} from '../../lib/direct-chat';
 
 // --- Path utilities ---
 
@@ -42,6 +48,7 @@ function resolveProjectPath(raw: string): string {
  *  When `parentHint` is true (duplicate names), appends parent folder:
  *  "A (Desktop)" vs "A (坚果云)" */
 function projectLabel(project: string, parentHint?: boolean): string {
+  if (project === DIRECT_CHAT_GROUP_KEY) return DIRECT_CHAT_GROUP_KEY;
   const parts = project.replace(/^~[\\/]/, '').split(/[\\/]/);
   const name = parts[parts.length - 1] || project;
   if (parentHint && parts.length >= 2) {
@@ -51,7 +58,9 @@ function projectLabel(project: string, parentHint?: boolean): string {
 }
 
 function getSessionWorkspacePath(session: SessionListItem): string {
-  return normalizeWorkspacePath(resolveProjectPath(session.project || session.projectDir));
+  const rawProject = resolveProjectPath(session.project || session.projectDir);
+  if (!rawProject || isDirectChatWorkspacePath(rawProject)) return DIRECT_CHAT_GROUP_KEY;
+  return normalizeWorkspacePath(rawProject);
 }
 
 interface WorkspaceGroupEntry {
@@ -80,6 +89,7 @@ interface ProjectMenuState {
 
 export function ConversationList() {
   const t = useT();
+  const locale = useSettingsStore((s) => s.locale);
 
   // Store subscriptions
   const sessions = useSessionStore((s) => s.sessions);
@@ -101,6 +111,20 @@ export function ConversationList() {
   const activeWorkspacePath = useSettingsStore((s) => s.workingDirectory);
   const setWorkingDirectory = useSettingsStore((s) => s.setWorkingDirectory);
   const removeWorkspace = useSettingsStore((s) => s.removeWorkspace);
+
+  const getGroupLabel = useCallback((projectPath: string, parentHint?: boolean) => {
+    if (projectPath === DIRECT_CHAT_GROUP_KEY) {
+      return getDirectChatLabel(locale);
+    }
+    return projectLabel(projectPath, parentHint);
+  }, [locale]);
+
+  const getGroupPathText = useCallback((projectPath: string) => {
+    if (projectPath === DIRECT_CHAT_GROUP_KEY) {
+      return getDirectChatHint(locale);
+    }
+    return projectPath;
+  }, [locale]);
 
   // Context menus
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
@@ -356,14 +380,21 @@ export function ConversationList() {
     const restored = useChatStore.getState().restoreFromCache(sessionId);
     if (restored) {
       useAgentStore.getState().restoreFromCache(sessionId);
-      if (projectOrDir) {
+      if (projectOrDir && !isDirectChatWorkspacePath(projectOrDir)) {
         useSettingsStore.getState().setWorkingDirectory(resolveProjectPath(projectOrDir));
+      } else {
+        useSettingsStore.getState().setWorkingDirectory('');
       }
       return;
     }
 
     // Draft sessions
     if (!sessionPath) {
+      if (projectOrDir && !isDirectChatWorkspacePath(projectOrDir)) {
+        useSettingsStore.getState().setWorkingDirectory(resolveProjectPath(projectOrDir));
+      } else {
+        useSettingsStore.getState().setWorkingDirectory('');
+      }
       useChatStore.getState().ensureTab(sessionId);
       useChatStore.getState().resetTab(sessionId);
       useAgentStore.getState().clearAgents();
@@ -372,7 +403,11 @@ export function ConversationList() {
 
     // Load from disk
     useChatStore.getState().ensureTab(sessionId);
-    useSettingsStore.getState().setWorkingDirectory(resolveProjectPath(projectOrDir));
+    if (projectOrDir && !isDirectChatWorkspacePath(projectOrDir)) {
+      useSettingsStore.getState().setWorkingDirectory(resolveProjectPath(projectOrDir));
+    } else {
+      useSettingsStore.getState().setWorkingDirectory('');
+    }
     const { clearMessages, addMessage, setSessionStatus, setSessionMeta } = useChatStore.getState();
     const agentActions = useAgentStore.getState();
     clearMessages(sessionId);
@@ -525,11 +560,14 @@ export function ConversationList() {
   }, []);
 
   const handleNewSessionInProject = useCallback((projectKey: string) => {
-    const allSessions = useSessionStore.getState().sessions;
-    const match = allSessions.find((s) => {
-      return getSessionWorkspacePath(s) === projectKey;
-    });
-    const realPath = match ? (match.project || match.projectDir) : resolveProjectPath(projectKey);
+    let realPath = '';
+    if (projectKey !== DIRECT_CHAT_GROUP_KEY) {
+      const allSessions = useSessionStore.getState().sessions;
+      const match = allSessions.find((s) => {
+        return getSessionWorkspacePath(s) === projectKey;
+      });
+      realPath = match ? (match.project || match.projectDir) : resolveProjectPath(projectKey);
+    }
     useSettingsStore.getState().setWorkingDirectory(realPath);
     const currentTabId = useSessionStore.getState().selectedSessionId;
     if (currentTabId) {
@@ -710,14 +748,15 @@ export function ConversationList() {
 
       {/* Project groups — detect duplicate folder names for disambiguation */}
       {workspaceGroups.map((group) => {
-        const baseName = projectLabel(group.projectPath);
-        const isDuplicate = workspaceGroups.filter((entry) => projectLabel(entry.projectPath) === baseName).length > 1;
+        const baseName = getGroupLabel(group.projectPath);
+        const isDuplicate = workspaceGroups.filter((entry) => getGroupLabel(entry.projectPath) === baseName).length > 1;
         return (
         <SessionGroup
           key={group.key}
           projectKey={group.key}
-          projectLabel={projectLabel(group.projectPath, isDuplicate)}
+          projectLabel={getGroupLabel(group.projectPath, isDuplicate)}
           projectPath={group.projectPath}
+          projectSubtitle={getGroupPathText(group.projectPath)}
           sessions={group.sessions}
           isExpanded={isExpanded(group.key)}
           selectedId={selectedId}
@@ -738,8 +777,10 @@ export function ConversationList() {
           renamingSessionId={renamingSessionId}
           onRenameDone={handleRenameDone}
           isSavedWorkspace={group.isSavedWorkspace}
-          isActiveWorkspace={normalizeWorkspacePath(activeWorkspacePath) === group.key}
-          onActivateWorkspace={setWorkingDirectory}
+          isActiveWorkspace={group.key === DIRECT_CHAT_GROUP_KEY
+            ? !normalizeWorkspacePath(activeWorkspacePath)
+            : normalizeWorkspacePath(activeWorkspacePath) === group.key}
+          onActivateWorkspace={(path) => setWorkingDirectory(path === DIRECT_CHAT_GROUP_KEY ? '' : path)}
         />
         );
       })}
@@ -909,7 +950,7 @@ export function ConversationList() {
                   .replace('{project}', t('conv.selected').replace('{n}', String(deleteAllTarget.count)))
               : t('conv.deleteAllConfirm')
                   .replace('{count}', String(deleteAllTarget.count))
-                  .replace('{project}', projectLabel(deleteAllTarget.projectKey))
+                  .replace('{project}', getGroupLabel(deleteAllTarget.projectKey))
           }
           detail={t('conv.deleteAllConfirmDetail')}
           variant="danger"

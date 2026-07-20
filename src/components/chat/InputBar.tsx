@@ -32,6 +32,11 @@ import { PermissionCard } from './PermissionCard';
 import { QuestionCard } from './QuestionCard';
 import { TiptapEditor, type TiptapEditorHandle } from './TiptapEditor';
 import { open } from '@tauri-apps/plugin-dialog';
+import {
+  ensureDirectChatWorkspacePath,
+  getDirectChatHint,
+  getDirectChatLabel,
+} from '../../lib/direct-chat';
 // drag-state import removed — tree drag handled by ChatPanel
 
 /** Thinking effort level configuration data */
@@ -280,6 +285,7 @@ export function InputBar() {
   const workingDirectory = useSettingsStore((s) => s.workingDirectory);
   const selectedModel = useSettingsStore((s) => s.selectedModel);
   const sessionMode = useSettingsStore((s) => s.sessionMode);
+  const locale = useSettingsStore((s) => s.locale);
 
   const handlePlanApprove = useCallback(async () => {
     const tabId = useSessionStore.getState().selectedSessionId;
@@ -455,7 +461,7 @@ export function InputBar() {
   const hasActiveSession = sessionStatus !== 'idle';
   const workingDirectoryLabel = workingDirectory
     ? workingDirectory.split(/[\\/]/).filter(Boolean).pop() || workingDirectory
-    : t('input.projectFolder');
+    : getDirectChatLabel(locale);
 
   const handlePickWorkingDirectory = useCallback(async () => {
     if (isRunning) return;
@@ -468,6 +474,13 @@ export function InputBar() {
       });
       if (typeof selected === 'string' && selected) {
         useSettingsStore.getState().setWorkingDirectory(selected);
+        const currentSessionId = useSessionStore.getState().selectedSessionId;
+        if (currentSessionId) {
+          const currentSession = useSessionStore.getState().sessions.find((session) => session.id === currentSessionId);
+          if (currentSession?.path === '') {
+            useSessionStore.getState().updateDraftProject(currentSessionId, selected);
+          }
+        }
       }
     } catch (error) {
       console.warn('[InputBar] failed to pick working directory', error);
@@ -758,11 +771,10 @@ export function InputBar() {
     // Capture tabId at the start of submission
     let tabId = useSessionStore.getState().selectedSessionId;
     if (!tabId) {
-      if (!workingDirectory) return;
       tabId = `draft_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       useChatStore.getState().ensureTab(tabId);
       useChatStore.getState().resetTab(tabId);
-      useSessionStore.getState().addDraftSession(tabId, workingDirectory);
+      useSessionStore.getState().addDraftSession(tabId, workingDirectory || '');
     }
     useChatStore.getState().ensureTab(tabId);
 
@@ -954,17 +966,7 @@ export function InputBar() {
     let sessionStdinId: string | undefined;
 
     try {
-      if (!workingDirectory) {
-        setSessionStatus(tabId, 'error');
-        addMessage(tabId, {
-          id: generateMessageId(),
-          role: 'system',
-          type: 'text',
-          content: 'No working directory selected. Please select a project folder first.',
-          timestamp: Date.now(),
-        });
-        return;
-      }
+      const effectiveWorkingDirectory = workingDirectory || await ensureDirectChatWorkspacePath();
 
       // Check model mapping before sending — block if provider has no mapping for selected tier
       const modelResolution = resolveModelOrError(selectedModel);
@@ -1017,6 +1019,18 @@ export function InputBar() {
               delete (window as any).__claudeUnlisteners[stdinId];
             }
             setSessionMeta(tabId, { stdinId: undefined, snapshotMode: undefined });
+            stdinId = undefined;
+          } else {
+          const currentWorkspace = useSettingsStore.getState().workingDirectory || '';
+          const spawnedWorkspace = getActiveTabState().sessionMeta.snapshotWorkingDirectory || '';
+          if (currentWorkspace !== spawnedWorkspace) {
+            console.warn(`[TOKENICODE] Workspace changed (${spawnedWorkspace || 'direct-chat'} -> ${currentWorkspace || 'direct-chat'}), killing stale session`);
+            bridge.killSession(stdinId).catch(() => {});
+            if ((window as any).__claudeUnlisteners?.[stdinId]) {
+              (window as any).__claudeUnlisteners[stdinId]();
+              delete (window as any).__claudeUnlisteners[stdinId];
+            }
+            setSessionMeta(tabId, { stdinId: undefined, snapshotWorkingDirectory: undefined });
             stdinId = undefined;
           } else {
           const currentContextMode = useSettingsStore.getState().contextWindowMode;
@@ -1081,6 +1095,7 @@ export function InputBar() {
             stdinId = undefined;
           }
           }
+          }
         }
         }
       }
@@ -1110,7 +1125,7 @@ export function InputBar() {
           flushStreamBuffer(oldStdinId);
         }
 
-        const cwd = workingDirectory;
+        const cwd = effectiveWorkingDirectory;
 
         // Generate the desk-side session ID FIRST so we can register
         // event listeners BEFORE spawning the process.
@@ -1263,6 +1278,7 @@ export function InputBar() {
           snapshotThinking: liveThinkingSetting,
           snapshotContextWindowMode: liveContextWindowMode,
           snapshotProviderId: liveProviderId,
+          snapshotWorkingDirectory: workingDirectory || '',
           spawnedModel: liveResolvedModel,
         });
         // Note: stdinId → tabId mapping already registered before listener setup (TK-329)
@@ -1710,7 +1726,7 @@ export function InputBar() {
             className="inline-flex items-center gap-1.5 max-w-[220px] px-2 py-1 rounded-lg text-xs
               text-text-secondary hover:text-text-primary hover:bg-bg-secondary
               disabled:opacity-40 disabled:cursor-not-allowed transition-smooth"
-            title={workingDirectory || t('input.selectFolder')}
+            title={workingDirectory || getDirectChatHint(locale)}
           >
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none"
               stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"

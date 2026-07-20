@@ -121,6 +121,7 @@ export interface SessionMeta {
   snapshotContextWindowMode?: import('./settingsStore').ContextWindowMode;
   /** Snapshot of active provider ID at session spawn — per-tab provider isolation */
   snapshotProviderId?: string | null;
+  snapshotWorkingDirectory?: string;
   /** The resolved model name used when spawning the CLI process.
    *  Compared before sending via stdin to detect mid-session model switches. */
   spawnedModel?: string;
