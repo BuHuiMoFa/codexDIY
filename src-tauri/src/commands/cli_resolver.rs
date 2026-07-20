@@ -23,9 +23,9 @@ use std::os::windows::process::CommandExt;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum CliSource {
-    Official = 0,
-    System = 1,
-    AppLocal = 2,
+    AppLocal = 0,
+    Official = 1,
+    System = 2,
     VersionManager = 3,
     Dynamic = 4,
 }
@@ -33,9 +33,9 @@ pub enum CliSource {
 impl std::fmt::Display for CliSource {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
+            Self::AppLocal => write!(f, "App-local"),
             Self::Official => write!(f, "Official"),
             Self::System => write!(f, "System"),
-            Self::AppLocal => write!(f, "App-local"),
             Self::VersionManager => write!(f, "Version Manager"),
             Self::Dynamic => write!(f, "Dynamic"),
         }
@@ -332,6 +332,20 @@ fn collect_tiered_dirs() -> Vec<TieredDir> {
     let bin_name = "claude";
 
     if let Some(home) = dirs::home_dir() {
+        // Prefer the app-managed runtime first so packaged builds do not
+        // silently pick up a stale system Claude CLI from the host machine.
+        if let Some(cli_dir) = crate::cli_download_dir() {
+            push(cli_dir.to_string_lossy().to_string(), CliSource::AppLocal);
+        }
+        if let Some(npm_bin) = crate::get_npm_global_bin() {
+            push(npm_bin.to_string_lossy().to_string(), CliSource::AppLocal);
+        }
+        if let Some(bundled_cli_dir) = crate::bundled_cli_bin_dir() {
+            push(
+                bundled_cli_dir.to_string_lossy().to_string(),
+                CliSource::AppLocal,
+            );
+        }
         // ── Tier 0: Official ───────────────────────────────
 
         // Claude Desktop bundled CLI (versioned dirs — newest version)
@@ -453,18 +467,6 @@ fn collect_tiered_dirs() -> Vec<TieredDir> {
 
         // ── Tier 2: AppLocal ───────────────────────────────
 
-        if let Some(cli_dir) = crate::cli_download_dir() {
-            push(cli_dir.to_string_lossy().to_string(), CliSource::AppLocal);
-        }
-        if let Some(npm_bin) = crate::get_npm_global_bin() {
-            push(npm_bin.to_string_lossy().to_string(), CliSource::AppLocal);
-        }
-        if let Some(bundled_cli_dir) = crate::bundled_cli_bin_dir() {
-            push(
-                bundled_cli_dir.to_string_lossy().to_string(),
-                CliSource::AppLocal,
-            );
-        }
 
         // ── Tier 3: Version Managers ───────────────────────
 

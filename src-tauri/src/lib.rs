@@ -2344,6 +2344,13 @@ async fn test_provider_connection(
 fn resolve_provider_env(
     provider_id: Option<&str>,
 ) -> Result<(HashMap<String, String>, Vec<String>, Vec<String>), String> {
+    fn expand_provider_placeholder(value: &str, provider: &ApiProvider) -> String {
+        value
+            .replace("${API_KEY}", provider.api_key.as_deref().unwrap_or(""))
+            .replace("${BASE_URL}", provider.base_url.as_str())
+            .replace("${PROVIDER_NAME}", provider.name.as_str())
+    }
+
     let Some(pid) = provider_id else {
         return Ok((HashMap::new(), vec![], vec![]));
     };
@@ -2356,6 +2363,15 @@ fn resolve_provider_env(
         .ok_or_else(|| format!("Provider '{}' not found", pid))?;
 
     let mut env = HashMap::new();
+    let mut keys_to_remove = vec![
+        "ANTHROPIC_BASE_URL".to_string(),
+        "ANTHROPIC_API_KEY".to_string(),
+        "ANTHROPIC_AUTH_TOKEN".to_string(),
+        "CLAUDE_CODE_AUTH_TOKEN".to_string(),
+        "CLAUDE_CODE_OAUTH_TOKEN".to_string(),
+        "CLAUDE_CODE_USE_BEDROCK".to_string(),
+        "CLAUDE_CODE_USE_VERTEX".to_string(),
+    ];
 
     // Set base URL
     if !provider.base_url.is_empty() {
@@ -2373,13 +2389,15 @@ fn resolve_provider_env(
     }
 
     // Merge extra_env (empty string = delete from child process env)
-    let mut keys_to_remove = Vec::new();
     if let Some(ref extra) = provider.extra_env {
         for (k, v) in extra {
-            if v.is_empty() {
-                keys_to_remove.push(k.clone());
+            let expanded = expand_provider_placeholder(v, provider);
+            if expanded.is_empty() {
+                if !keys_to_remove.contains(k) {
+                    keys_to_remove.push(k.clone());
+                }
             } else {
-                env.insert(k.clone(), v.clone());
+                env.insert(k.clone(), expanded);
             }
         }
     }
