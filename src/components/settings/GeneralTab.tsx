@@ -183,18 +183,18 @@ function ThemeToggle({
   return (
     <button
       onClick={onToggle}
-      className="inline-flex items-center gap-2 rounded-full border border-border-subtle bg-bg-card/70 px-3 py-1.5 text-[12px] text-text-secondary transition-smooth hover:text-text-primary"
+      className="inline-flex w-full min-w-0 items-center justify-center gap-2 overflow-hidden rounded-full border border-border-subtle bg-bg-card/70 px-3 py-1.5 text-[12px] text-text-secondary transition-smooth hover:text-text-primary sm:w-auto sm:max-w-full sm:justify-start"
     >
-      <span className={`relative h-5 w-9 rounded-full transition-smooth ${
-        enabled ? 'bg-accent/85' : 'bg-bg-tertiary'
+      <span className={`relative h-5 w-9 shrink-0 rounded-full transition-smooth ${
+        enabled ? 'bg-accent/85' : 'border border-border-subtle bg-black/10 dark:bg-white/12'
       }`}
       >
-        <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-          enabled ? 'translate-x-[18px]' : 'translate-x-0.5'
+        <span className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+          enabled ? 'translate-x-[18px]' : 'translate-x-0'
         }`}
         />
       </span>
-      <span>{enabled ? '已启用自定义主题' : '未启用自定义主题'}</span>
+      <span className="truncate whitespace-nowrap">{enabled ? '已启用自定义主题' : '未启用自定义主题'}</span>
     </button>
   );
 }
@@ -499,8 +499,8 @@ export function GeneralTab() {
       </div>
 
       <div className="rounded-2xl border border-border-subtle bg-bg-secondary/40 p-4">
-        <div className="flex items-start justify-between gap-3 flex-wrap">
-          <div>
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
             <h3 className="text-[13px] font-medium text-text-primary">自定义主题</h3>
             <p className="mt-1 text-xs text-text-tertiary leading-relaxed">
               把背景图、文案、颜色和透明度组合成一套主题。启用后会覆盖上面的预设背景风格。
@@ -853,11 +853,11 @@ export function GeneralTab() {
             className="mt-2 inline-flex items-center gap-2 text-[12px] text-text-secondary hover:text-text-primary transition-smooth"
           >
             <span className={`relative w-8 h-4 rounded-full transition-smooth ${
-              monoFontFollowsInterface ? 'bg-accent/80' : 'bg-bg-tertiary border border-border-subtle'
+              monoFontFollowsInterface ? 'bg-accent/80' : 'border border-border-subtle bg-black/10 dark:bg-white/12'
             }`}
             >
-              <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow-sm transition-transform ${
-                monoFontFollowsInterface ? 'translate-x-4' : 'translate-x-0.5'
+              <span className={`absolute left-0.5 top-0.5 w-3 h-3 rounded-full bg-white shadow-sm transition-transform ${
+                monoFontFollowsInterface ? 'translate-x-4' : 'translate-x-0'
               }`}
               />
             </span>
