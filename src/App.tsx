@@ -88,7 +88,6 @@ function App() {
   const colorTheme = useSettingsStore((s) => s.colorTheme);
   const backgroundTheme = useSettingsStore((s) => s.backgroundTheme);
   const customThemeEnabled = useSettingsStore((s) => s.customThemeEnabled);
-  const customTheme = useSettingsStore((s) => s.customTheme);
   const fontSize = useSettingsStore((s) => s.fontSize);
   const fontFamily = useSettingsStore((s) => s.fontFamily);
   const monoFontFollowsInterface = useSettingsStore((s) => s.monoFontFollowsInterface);
@@ -280,8 +279,15 @@ function App() {
   }, [backgroundTheme, customThemeEnabled]);
 
   useEffect(() => {
-    applyCustomThemeCssVars(document.documentElement, customTheme);
-  }, [customTheme]);
+    const root = document.documentElement;
+    applyCustomThemeCssVars(root, useSettingsStore.getState().customTheme);
+    const unsubscribe = useSettingsStore.subscribe((state, prevState) => {
+      if (state.customTheme !== prevState.customTheme) {
+        applyCustomThemeCssVars(root, state.customTheme);
+      }
+    });
+    return unsubscribe;
+  }, []);
 
   // Update macOS dock icon when color theme changes
   useEffect(() => {

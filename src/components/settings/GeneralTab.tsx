@@ -12,6 +12,7 @@ import {
   getAutoCompactThreshold,
   getContextWindowForModel,
 } from '../../stores/settingsStore';
+import { useEffect } from 'react';
 import { useProviderStore } from '../../stores/providerStore';
 import { useT } from '../../lib/i18n';
 import { displayProviderModelName } from '../../lib/deepseek-models';
@@ -201,25 +202,28 @@ function ThemeToggle({
 function ThemeColorControl({
   label,
   value,
-  onChange,
+  onInputChange,
+  onCommit,
 }: {
   label: string;
   value: string;
-  onChange: (value: string) => void;
+  onInputChange: (value: string) => void;
+  onCommit: (value: string) => void;
 }) {
   return (
     <label className="rounded-xl border border-border-subtle bg-bg-card/60 p-3">
-      <div className="mb-2 text-[12px] font-medium text-text-primary">{label}</div>
+      <div className="mb-2 truncate text-[12px] font-medium text-text-primary whitespace-nowrap">{label}</div>
       <div className="flex items-center gap-3">
         <input
           type="color"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-10 w-10 cursor-pointer rounded-lg border border-border-subtle bg-transparent p-0.5"
+          onInput={(e) => onInputChange((e.target as HTMLInputElement).value)}
+          onChange={(e) => onCommit(e.target.value)}
+          className="h-10 w-10 shrink-0 cursor-pointer rounded-lg border border-border-subtle bg-transparent p-0.5"
         />
-        <div className="min-w-0">
-          <div className="text-[13px] font-medium text-text-primary">{value.toUpperCase()}</div>
-          <div className="text-[11px] text-text-tertiary">点击色块快速调整</div>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[13px] font-medium text-text-primary whitespace-nowrap">{value.toUpperCase()}</div>
+          <div className="truncate text-[11px] text-text-tertiary whitespace-nowrap">点击色块快速调整</div>
         </div>
       </div>
     </label>
@@ -281,6 +285,11 @@ export function GeneralTab() {
   const [cropTarget, setCropTarget] = useState<'ai' | 'user'>('ai');
   const [backgroundUploading, setBackgroundUploading] = useState(false);
   const [backgroundUploadError, setBackgroundUploadError] = useState('');
+  const [draftThemeColors, setDraftThemeColors] = useState<CustomThemeColors>(customTheme.colors);
+
+  useEffect(() => {
+    setDraftThemeColors(customTheme.colors);
+  }, [customTheme.colors]);
 
   const selectedTier = TIER_MAP[selectedModel];
   const selectedMapping = selectedTier
@@ -307,8 +316,23 @@ export function GeneralTab() {
         backgroundPosition: 'center',
       }
     : {
-        background: `linear-gradient(135deg, ${customTheme.colors.background} 0%, ${customTheme.colors.accentSoft} 100%)`,
+        background: `linear-gradient(135deg, ${draftThemeColors.background} 0%, ${draftThemeColors.accentSoft} 100%)`,
       };
+
+  const handleDraftThemeColorChange = useCallback((key: keyof CustomThemeColors, value: string) => {
+    setDraftThemeColors((current) => {
+      if (current[key] === value) return current;
+      return { ...current, [key]: value };
+    });
+  }, []);
+
+  const handleCommitThemeColor = useCallback((key: keyof CustomThemeColors, value: string) => {
+    setDraftThemeColors((current) => {
+      if (current[key] === value) return current;
+      return { ...current, [key]: value };
+    });
+    updateCustomThemeColors({ [key]: value } as Partial<CustomThemeColors>);
+  }, [updateCustomThemeColors]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>, target: 'ai' | 'user') => {
     const file = e.target.files?.[0];
@@ -488,82 +512,86 @@ export function GeneralTab() {
           />
         </div>
 
-        <div className="mt-4 grid gap-5 xl:grid-cols-[232px,minmax(0,1fr)]">
-          <div className="space-y-4">
-            <div
-              className="relative overflow-hidden rounded-[22px] border border-border-subtle shadow-sm"
-              style={themeCoverStyle}
-            >
-              <div className="aspect-[4/3.25] p-3.5 text-white">
-                <div className="flex h-full flex-col justify-between">
-                  <div>
-                    <div className="text-[11px] uppercase tracking-[0.24em] text-white/85">
-                      {customTheme.statusText}
-                    </div>
-                    <div className="mt-2.5 text-[1.45rem] font-semibold leading-tight">
-                      {customTheme.headline}
-                    </div>
-                    <div className="mt-1.5 text-[11px] leading-4.5 text-white/88">
-                      {customTheme.tagline}
-                    </div>
-                  </div>
+        <div className="mt-4 grid gap-5 xl:grid-cols-[minmax(0,0.96fr)_minmax(0,1.04fr)]">
+          <div className="space-y-4 min-w-0">
+            <div className="grid gap-4 2xl:grid-cols-[248px,minmax(0,1fr)] 2xl:items-start">
+              <div className="space-y-4">
+                <div
+                  className="relative max-w-[248px] overflow-hidden rounded-[22px] border border-border-subtle shadow-sm"
+                  style={themeCoverStyle}
+                >
+                  <div className="aspect-[4/2.8] p-2.5 text-white">
+                    <div className="flex h-full flex-col justify-between">
+                      <div>
+                        <div className="text-[9.5px] uppercase tracking-[0.2em] text-white/85">
+                          {customTheme.statusText}
+                        </div>
+                        <div className="mt-1.5 text-[1.02rem] font-semibold leading-[1.08]">
+                          {customTheme.headline}
+                        </div>
+                        <div className="mt-1 text-[9.5px] leading-[1.3] text-white/88 line-clamp-2">
+                          {customTheme.tagline}
+                        </div>
+                      </div>
 
-                  <div className="rounded-[18px] bg-white/92 p-2.5 text-left shadow-sm backdrop-blur">
-                    <div className="text-[14px] font-semibold" style={{ color: customTheme.colors.text }}>
-                      {customTheme.name}
+                      <div className="rounded-[14px] bg-white/92 px-2 py-1.5 text-left shadow-sm backdrop-blur">
+                        <div className="text-[12px] font-semibold leading-none" style={{ color: draftThemeColors.text }}>
+                          {customTheme.name}
+                        </div>
+                        <div className="mt-0.5 text-[9px] leading-none" style={{ color: draftThemeColors.textMuted }}>
+                          {customTheme.projectLabel}
+                        </div>
+                        <button
+                          type="button"
+                          className="mt-1 inline-flex rounded-full px-1.5 py-0.5 text-[9px] font-medium text-white"
+                          style={{ background: `linear-gradient(180deg, ${draftThemeColors.accent}, ${draftThemeColors.accentStrong})` }}
+                        >
+                          {customTheme.projectButtonText}
+                        </button>
+                      </div>
                     </div>
-                    <div className="mt-0.5 text-[11px]" style={{ color: customTheme.colors.textMuted }}>
-                      {customTheme.projectLabel}
-                    </div>
-                    <button
-                      type="button"
-                      className="mt-2 inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium text-white"
-                      style={{ background: `linear-gradient(180deg, ${customTheme.colors.accent}, ${customTheme.colors.accentStrong})` }}
-                    >
-                      {customTheme.projectButtonText}
-                    </button>
                   </div>
                 </div>
+
+                <div className="rounded-xl border border-border-subtle bg-bg-card/60 px-3 py-2 text-[11px] leading-5 text-text-tertiary">
+                  <div>支持格式：JPG / PNG / WebP</div>
+                  <div>推荐比例：{RECOMMENDED_BACKGROUND_RATIO}</div>
+                  <div>推荐最小尺寸：{RECOMMENDED_BACKGROUND_RESOLUTION}</div>
+                  <div>如果不用图片，也可以只用颜色做主题。</div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => backgroundFileInputRef.current?.click()}
+                    className="px-3 py-2 rounded-lg text-[13px] font-medium bg-accent text-text-inverse hover:bg-accent-hover transition-smooth"
+                  >
+                    {customBackgroundImageUrl ? '更换主题图片' : '上传主题图片'}
+                  </button>
+                  <button
+                    onClick={() => setCustomBackgroundImageUrl('')}
+                    disabled={!customBackgroundImageUrl}
+                    className="px-3 py-2 rounded-lg text-[13px] font-medium border border-border-subtle text-text-muted hover:text-text-primary hover:bg-bg-secondary transition-smooth disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    清除图片
+                  </button>
+                  <button
+                    onClick={() => {
+                      resetCustomTheme();
+                      setCustomThemeEnabled(false);
+                    }}
+                    className="px-3 py-2 rounded-lg text-[13px] font-medium border border-border-subtle text-text-muted hover:text-text-primary hover:bg-bg-secondary transition-smooth"
+                  >
+                    恢复默认主题
+                  </button>
+                </div>
+
+                {backgroundUploading && <p className="text-xs text-text-tertiary">正在处理图片...</p>}
+                {backgroundUploadError && <p className="text-xs text-red-500">{backgroundUploadError}</p>}
               </div>
             </div>
 
-            <div className="rounded-xl border border-border-subtle bg-bg-card/60 px-3 py-2 text-[11px] leading-5 text-text-tertiary">
-              <div>支持格式：JPG / PNG / WebP</div>
-              <div>推荐比例：{RECOMMENDED_BACKGROUND_RATIO}</div>
-              <div>推荐最小尺寸：{RECOMMENDED_BACKGROUND_RESOLUTION}</div>
-              <div>如果不用图片，也可以只用颜色做主题。</div>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => backgroundFileInputRef.current?.click()}
-                className="px-3 py-2 rounded-lg text-[13px] font-medium bg-accent text-text-inverse hover:bg-accent-hover transition-smooth"
-              >
-                {customBackgroundImageUrl ? '更换主题图片' : '上传主题图片'}
-              </button>
-              <button
-                onClick={() => setCustomBackgroundImageUrl('')}
-                disabled={!customBackgroundImageUrl}
-                className="px-3 py-2 rounded-lg text-[13px] font-medium border border-border-subtle text-text-muted hover:text-text-primary hover:bg-bg-secondary transition-smooth disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                清除图片
-              </button>
-              <button
-                onClick={() => {
-                  resetCustomTheme();
-                  setCustomThemeEnabled(false);
-                }}
-                className="px-3 py-2 rounded-lg text-[13px] font-medium border border-border-subtle text-text-muted hover:text-text-primary hover:bg-bg-secondary transition-smooth"
-              >
-                恢复默认主题
-              </button>
-            </div>
-
-            {backgroundUploading && <p className="text-xs text-text-tertiary">正在处理图片...</p>}
-            {backgroundUploadError && <p className="text-xs text-red-500">{backgroundUploadError}</p>}
-          </div>
-
-          <div className="space-y-4 min-w-0">
             <div className="grid gap-3 md:grid-cols-2">
               {CUSTOM_THEME_TEXT_FIELDS.map((field) => (
                 <label
@@ -581,14 +609,17 @@ export function GeneralTab() {
                 </label>
               ))}
             </div>
+          </div>
 
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className="space-y-4 min-w-0">
+            <div className="grid gap-3 md:grid-cols-2">
               {CUSTOM_THEME_COLOR_FIELDS.map((field) => (
                 <ThemeColorControl
                   key={field.key}
                   label={field.label}
-                  value={customTheme.colors[field.key]}
-                  onChange={(value) => updateCustomThemeColors({ [field.key]: value } as Partial<CustomThemeColors>)}
+                  value={draftThemeColors[field.key]}
+                  onInputChange={(value) => handleDraftThemeColorChange(field.key, value)}
+                  onCommit={(value) => handleCommitThemeColor(field.key, value)}
                 />
               ))}
             </div>
@@ -646,7 +677,7 @@ export function GeneralTab() {
                 </div>
                 <button
                   onClick={() => setCustomThemeEnabled(true)}
-                  className="px-3 py-1.5 rounded-lg text-[12px] font-medium bg-accent text-text-inverse hover:bg-accent-hover transition-smooth"
+                  className="inline-flex shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-[12px] font-medium bg-accent text-text-inverse hover:bg-accent-hover transition-smooth"
                 >
                   应用这套主题
                 </button>
@@ -655,7 +686,7 @@ export function GeneralTab() {
               <div
                 className="relative aspect-[16/10] overflow-hidden rounded-xl border"
                 style={{
-                  borderColor: customTheme.colors.border,
+                  borderColor: draftThemeColors.border,
                   ...(customBackgroundImageUrl
                     ? {
                         backgroundImage: `url("${customBackgroundImageUrl}")`,
@@ -664,7 +695,7 @@ export function GeneralTab() {
                         backgroundRepeat: 'no-repeat',
                       }
                     : {
-                        background: `linear-gradient(135deg, ${customTheme.colors.background} 0%, ${customTheme.colors.accentSoft} 100%)`,
+                        background: `linear-gradient(135deg, ${draftThemeColors.background} 0%, ${draftThemeColors.accentSoft} 100%)`,
                       }),
                 }}
               >
@@ -679,37 +710,37 @@ export function GeneralTab() {
                 <div
                   className="absolute left-3 top-3 bottom-3 w-[28%] rounded-lg border shadow-sm backdrop-blur-xl"
                   style={{
-                    borderColor: `${customTheme.colors.border}AA`,
-                    backgroundColor: `color-mix(in srgb, ${customTheme.colors.surfaceAlt} ${previewSidebarOpacity}%, transparent)`,
+                    borderColor: `${draftThemeColors.border}AA`,
+                    backgroundColor: `color-mix(in srgb, ${draftThemeColors.surfaceAlt} ${previewSidebarOpacity}%, transparent)`,
                     boxShadow: backgroundEnhanceEnabled ? '0 12px 30px rgba(15, 23, 42, 0.14)' : undefined,
                   }}
                 >
                   <div className="space-y-2 p-2.5">
-                    <div className="h-2.5 rounded-full" style={{ background: `${customTheme.colors.text}22` }} />
-                    <div className="h-2 rounded-full" style={{ background: `${customTheme.colors.accent}30` }} />
-                    <div className="h-2 rounded-full" style={{ background: `${customTheme.colors.textMuted}28` }} />
+                    <div className="h-2.5 rounded-full" style={{ background: `${draftThemeColors.text}22` }} />
+                    <div className="h-2 rounded-full" style={{ background: `${draftThemeColors.accent}30` }} />
+                    <div className="h-2 rounded-full" style={{ background: `${draftThemeColors.textMuted}28` }} />
                   </div>
                 </div>
                 <div
                   className="absolute inset-y-3 right-3 left-[36%] rounded-lg border shadow-sm backdrop-blur-xl"
                   style={{
-                    borderColor: `${customTheme.colors.border}AA`,
-                    backgroundColor: `color-mix(in srgb, ${customTheme.colors.surface} ${previewChatOpacity}%, transparent)`,
+                    borderColor: `${draftThemeColors.border}AA`,
+                    backgroundColor: `color-mix(in srgb, ${draftThemeColors.surface} ${previewChatOpacity}%, transparent)`,
                     boxShadow: backgroundEnhanceEnabled ? '0 12px 30px rgba(15, 23, 42, 0.14)' : undefined,
                   }}
                 >
                   <div className="flex h-full flex-col justify-between p-3">
                     <div className="space-y-2">
-                      <div className="h-2.5 w-[62%] rounded-full" style={{ background: `${customTheme.colors.text}22` }} />
+                      <div className="h-2.5 w-[62%] rounded-full" style={{ background: `${draftThemeColors.text}22` }} />
                       <div
                         className="ml-auto h-9 w-[56%] rounded-2xl"
-                        style={{ background: `linear-gradient(180deg, ${customTheme.colors.accent}, ${customTheme.colors.accentStrong})` }}
+                        style={{ background: `linear-gradient(180deg, ${draftThemeColors.accent}, ${draftThemeColors.accentStrong})` }}
                       />
-                      <div className="h-8 w-[72%] rounded-2xl" style={{ background: `${customTheme.colors.surfaceAlt}CC` }} />
+                      <div className="h-8 w-[72%] rounded-2xl" style={{ background: `${draftThemeColors.surfaceAlt}CC` }} />
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="h-8 flex-1 rounded-full" style={{ background: `${customTheme.colors.surfaceAlt}CC` }} />
-                      <div className="h-8 w-8 rounded-full" style={{ background: customTheme.colors.accentSoft }} />
+                      <div className="h-8 flex-1 rounded-full" style={{ background: `${draftThemeColors.surfaceAlt}CC` }} />
+                      <div className="h-8 w-8 rounded-full" style={{ background: draftThemeColors.accentSoft }} />
                     </div>
                   </div>
                 </div>
@@ -724,13 +755,13 @@ export function GeneralTab() {
                     updateCustomTheme({ id: DEFAULT_CUSTOM_THEME.id });
                   }
                 }}
-                className="px-3 py-2 rounded-lg text-[13px] font-medium bg-accent text-text-inverse hover:bg-accent-hover transition-smooth"
+                className="inline-flex whitespace-nowrap px-3 py-2 rounded-lg text-[13px] font-medium bg-accent text-text-inverse hover:bg-accent-hover transition-smooth"
               >
                 保存并启用自定义主题
               </button>
               <button
                 onClick={() => resetCustomTheme()}
-                className="px-3 py-2 rounded-lg text-[13px] font-medium border border-border-subtle text-text-muted hover:text-text-primary hover:bg-bg-secondary transition-smooth"
+                className="inline-flex whitespace-nowrap px-3 py-2 rounded-lg text-[13px] font-medium border border-border-subtle text-text-muted hover:text-text-primary hover:bg-bg-secondary transition-smooth"
               >
                 仅重置主题字段
               </button>

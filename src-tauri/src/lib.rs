@@ -74,6 +74,34 @@ fn strip_ansi(s: &str) -> String {
     out
 }
 
+fn contains_mojibake_hint(text: &str) -> bool {
+    text.contains('\u{fffd}')
+        || text.contains("锟")
+        || text.contains("鈥")
+        || text.contains("闁")
+        || text.contains("��")
+}
+
+#[cfg(target_os = "windows")]
+fn decode_command_output(bytes: &[u8]) -> String {
+    let utf8 = String::from_utf8_lossy(bytes).into_owned();
+    if !contains_mojibake_hint(&utf8) {
+        return utf8;
+    }
+    let (gbk, _, had_errors) = encoding_rs::GBK.decode(bytes);
+    let gbk = gbk.into_owned();
+    if had_errors && contains_mojibake_hint(&gbk) {
+        utf8
+    } else {
+        gbk
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn decode_command_output(bytes: &[u8]) -> String {
+    String::from_utf8_lossy(bytes).into_owned()
+}
+
 fn decode_xml_entities(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     let mut rest = s;
@@ -6837,8 +6865,8 @@ async fn run_claude_command(subcommand: String, cwd: Option<String>) -> Result<S
         .await
         .map_err(|_| format!("claude {} timed out after 30s", subcommand))?
         .map_err(|e| format!("Failed to run claude {}: {}", subcommand, e))?;
-    let stdout = strip_ansi(&String::from_utf8_lossy(&output.stdout));
-    let stderr = strip_ansi(&String::from_utf8_lossy(&output.stderr));
+    let stdout = strip_ansi(&decode_command_output(&output.stdout));
+    let stderr = strip_ansi(&decode_command_output(&output.stderr));
     if output.status.success() {
         let combined = if stderr.is_empty() {
             stdout
@@ -6918,8 +6946,8 @@ async fn run_claude_plugin_command(args: Vec<String>, cwd: Option<String>) -> Re
         .await
         .map_err(|_| "claude plugin command timed out after 180s".to_string())?
         .map_err(|e| format!("Failed to run claude plugin: {}", e))?;
-    let stdout = strip_ansi(&String::from_utf8_lossy(&output.stdout));
-    let stderr = strip_ansi(&String::from_utf8_lossy(&output.stderr));
+    let stdout = strip_ansi(&decode_command_output(&output.stdout));
+    let stderr = strip_ansi(&decode_command_output(&output.stderr));
     if output.status.success() {
         if stdout.trim().is_empty() {
             Ok(stderr.trim().to_string())

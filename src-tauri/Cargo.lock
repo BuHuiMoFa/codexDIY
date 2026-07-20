@@ -5059,6 +5059,7 @@ dependencies = [
  "chrono",
  "cocoa",
  "dirs",
+ "encoding_rs",
  "flate2",
  "futures-util",
  "libc",

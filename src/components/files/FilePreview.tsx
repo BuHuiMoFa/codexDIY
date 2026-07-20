@@ -260,6 +260,7 @@ export function FilePreview() {
   const [translatedSkillContent, setTranslatedSkillContent] = useState<MarkdownTranslationCache>(() => loadMarkdownTranslationCache());
   const [isTranslatingSkill, setIsTranslatingSkill] = useState(false);
   const [skillTranslationError, setSkillTranslationError] = useState<string | null>(null);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
 
   // Auto-refresh preview when the selected file is modified externally
   const reloadRef = useRef(reloadContent);
@@ -294,6 +295,38 @@ export function FilePreview() {
   const displayedMarkdownContent = selectedFile && showTranslatedSkill
     ? (translatedSkillContent[selectedFile] || fileContent)
     : fileContent;
+
+  useEffect(() => {
+    if (!isPdf || !fileContent) {
+      setPdfPreviewUrl(null);
+      return;
+    }
+
+    if (!fileContent.startsWith('data:application/pdf')) {
+      setPdfPreviewUrl(fileContent);
+      return;
+    }
+
+    let revokedUrl: string | null = null;
+    let alive = true;
+
+    fetch(fileContent)
+      .then((response) => response.arrayBuffer())
+      .then((buffer) => {
+        if (!alive) return;
+        const blob = new Blob([buffer], { type: 'application/pdf' });
+        revokedUrl = URL.createObjectURL(blob);
+        setPdfPreviewUrl(revokedUrl);
+      })
+      .catch(() => {
+        if (alive) setPdfPreviewUrl(fileContent);
+      });
+
+    return () => {
+      alive = false;
+      if (revokedUrl) URL.revokeObjectURL(revokedUrl);
+    };
+  }, [isPdf, fileContent]);
 
   const lineCount = useMemo(() => {
     const content = isEditing ? editContent : fileContent;
@@ -540,13 +573,26 @@ export function FilePreview() {
             />
           </div>
         ) : isPdf && selectedFile && fileContent ? (
-          /* PDF preview: iframe with local asset URL */
+          /* PDF preview: blob/object is more reliable than iframe in Tauri WebView */
           <div className="flex flex-col h-full">
-            <iframe
-              src={fileContent}
-              className="flex-1 w-full border-0 bg-white"
-              title={fileName}
-            />
+            {pdfPreviewUrl ? (
+              <object
+                data={pdfPreviewUrl}
+                type="application/pdf"
+                className="flex-1 w-full bg-white"
+                aria-label={fileName}
+              >
+                <embed
+                  src={pdfPreviewUrl}
+                  type="application/pdf"
+                  className="h-full w-full bg-white"
+                />
+              </object>
+            ) : (
+              <div className="flex flex-1 items-center justify-center bg-white text-xs text-text-muted">
+                {t('files.loading')}
+              </div>
+            )}
             <div className="flex items-center justify-center py-2 border-t border-border-subtle">
               <button
                 onClick={() => bridge.openWithDefaultApp(selectedFile)}

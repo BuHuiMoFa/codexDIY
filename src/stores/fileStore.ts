@@ -18,10 +18,13 @@ export interface LiveReviewEntry {
 }
 
 const OFFICE_REVIEW_EXTS = new Set(['docx', 'xlsx', 'pptx']);
-const DATA_URL_PREVIEW_EXTS = new Set([
+const ASSET_URL_PREVIEW_EXTS = new Set([
   'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'ico',
-  'pdf', 'mp4', 'webm', 'mov', 'avi',
+  'mp4', 'webm', 'mov', 'avi',
   'mp3', 'wav', 'ogg', 'aac', 'm4a',
+]);
+const DATA_URL_PREVIEW_EXTS = new Set([
+  'pdf',
 ]);
 const BINARY_PLACEHOLDER_EXTS = new Set([
   'doc', 'xls', 'ppt', 'zip', 'tar', 'gz', 'rar', '7z', 'exe', 'dmg', 'pkg',
@@ -84,7 +87,10 @@ function computeDiffStats(oldString?: string | null, newString?: string | null) 
 
 function isLiveReviewSupported(path: string): boolean {
   const ext = path.split('.').pop()?.toLowerCase() || '';
-  return !DATA_URL_PREVIEW_EXTS.has(ext) && !BINARY_PLACEHOLDER_EXTS.has(ext) && !isArchivePreviewPath(path);
+  return !ASSET_URL_PREVIEW_EXTS.has(ext)
+    && !DATA_URL_PREVIEW_EXTS.has(ext)
+    && !BINARY_PLACEHOLDER_EXTS.has(ext)
+    && !isArchivePreviewPath(path);
 }
 
 function parseXlsxPreviewContent(content: string) {
@@ -303,12 +309,24 @@ export const useFileStore = create<FileState>()((set, get) => ({
         editContent: null,
       });
 
-      // Binary-preview files: skip text reading, render with file:// URL in FilePreview
+      // Binary-preview files: skip text reading and use either a local asset URL
+      // or a base64 data URL, depending on the format.
       const ext = path.split('.').pop()?.toLowerCase() || '';
 
-      if (DATA_URL_PREVIEW_EXTS.has(ext)) {
+      if (ASSET_URL_PREVIEW_EXTS.has(ext)) {
         if (get().selectedFile === path) {
           set({ fileContent: buildPreviewAssetUrl(path), isLoadingContent: false });
+        }
+      } else if (DATA_URL_PREVIEW_EXTS.has(ext)) {
+        try {
+          const content = await bridge.readFileBase64(path);
+          if (get().selectedFile === path) {
+            set({ fileContent: content, isLoadingContent: false });
+          }
+        } catch (error) {
+          if (get().selectedFile === path) {
+            set({ fileContent: `// ${toErrorMessage(error, 'Error loading binary preview')}`, isLoadingContent: false });
+          }
         }
       } else if (isArchivePreviewPath(path)) {
         try {
